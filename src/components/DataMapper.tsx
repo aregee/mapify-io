@@ -38,7 +38,6 @@ const DataMapper = () => {
   const handleTransform = () => {
     try {
       // TODO: Implement actual transformation logic
-      // For now, we'll just format the output
       const formattedOutput = format === "json" 
         ? jsonFormat(sampleData)
         : json2yaml(JSON.parse(sampleData));
@@ -57,57 +56,70 @@ const DataMapper = () => {
   };
 
   return (
-    <div className="container mx-auto p-4 min-h-screen animate-fade-in">
-      <div className="space-y-4">
-        <header className="text-center mb-8">
-          <h1 className="text-3xl font-semibold mb-2">Data Mapper</h1>
-          <p className="text-muted-foreground">Transform your data with ease</p>
-        </header>
+    <div className="flex flex-col min-h-screen bg-background animate-fade-in">
+      <header className="border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container flex h-14 max-w-screen-2xl items-center">
+          <div className="mr-4 hidden md:flex">
+            <h1 className="text-xl font-semibold">Data Mapper</h1>
+          </div>
+          <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
+            <Tabs value={format} onValueChange={handleFormatChange as any}>
+              <TabsList className="h-9">
+                <TabsTrigger value="yaml" className="text-xs">YAML</TabsTrigger>
+                <TabsTrigger value="json" className="text-xs">JSON</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+        </div>
+      </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <Card className="p-4">
-            <div className="mb-4 flex justify-between items-center">
-              <h2 className="text-xl font-semibold">Mapping Rules</h2>
-              <Tabs value={format} onValueChange={handleFormatChange as any}>
-                <TabsList>
-                  <TabsTrigger value="yaml">YAML</TabsTrigger>
-                  <TabsTrigger value="json">JSON</TabsTrigger>
-                </TabsList>
-              </Tabs>
+      <div className="container mx-auto p-6 flex-1 items-start md:grid md:grid-cols-[1fr_400px] md:gap-6 lg:grid-cols-[1fr_450px]">
+        <div className="relative">
+          <Card className="rounded-md border shadow-md">
+            <div className="flex items-center justify-between p-2 border-b">
+              <div className="text-sm font-medium">Mapping Rules</div>
             </div>
             <Editor
               value={mappingRules}
               onChange={setMappingRules}
               language={format}
-              className="h-[400px]"
+              className="min-h-[600px]"
+            />
+          </Card>
+        </div>
+
+        <div className="flex flex-col space-y-4">
+          <Card className="rounded-md border shadow-md">
+            <div className="flex items-center justify-between p-2 border-b">
+              <div className="text-sm font-medium">Sample Data</div>
+            </div>
+            <Editor
+              value={sampleData}
+              onChange={setSampleData}
+              language="json"
+              className="h-[250px]"
             />
           </Card>
 
-          <div className="space-y-4">
-            <Card className="p-4">
-              <h2 className="text-xl font-semibold mb-4">Sample Data</h2>
-              <Editor
-                value={sampleData}
-                onChange={setSampleData}
-                language="json"
-                className="h-[180px]"
-              />
-            </Card>
-
-            <Card className="p-4">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold">Output</h2>
-                <Button onClick={handleTransform}>Transform</Button>
-              </div>
-              <Editor
-                value={output}
-                onChange={setOutput}
-                language={format}
-                className="h-[180px]"
-                readOnly
-              />
-            </Card>
-          </div>
+          <Card className="rounded-md border shadow-md">
+            <div className="flex items-center justify-between p-2 border-b">
+              <div className="text-sm font-medium">Output</div>
+              <Button 
+                onClick={handleTransform}
+                size="sm"
+                className="h-7 px-3 text-xs"
+              >
+                Transform
+              </Button>
+            </div>
+            <Editor
+              value={output}
+              onChange={setOutput}
+              language={format}
+              className="h-[250px]"
+              readOnly
+            />
+          </Card>
         </div>
       </div>
     </div>
