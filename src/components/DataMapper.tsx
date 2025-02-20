@@ -7,23 +7,30 @@ import { toast } from "./ui/use-toast";
 import Editor from "./Editor";
 import { json as jsonFormat } from 'js-beautify';
 import { parse as yamlParse, stringify as yamlStringify } from 'yaml';
+import { Play, PenLine, Plus, X } from "lucide-react";
 
 type Format = "json" | "yaml";
 
+interface SampleDataItem {
+  id: string;
+  name: string;
+  data: string;
+}
+
 const DataMapper = () => {
   const [mappingRules, setMappingRules] = useState("");
-  const [sampleData, setSampleData] = useState("");
+  const [sampleDataList, setSampleDataList] = useState<SampleDataItem[]>([]);
   const [output, setOutput] = useState("");
   const [format, setFormat] = useState<Format>("yaml");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingData, setEditingData] = useState("");
 
   const handleFormatChange = (newFormat: Format) => {
     try {
       if (format === "yaml" && newFormat === "json") {
-        // Convert YAML to JSON
         const jsonData = yamlParse(mappingRules);
         setMappingRules(jsonFormat(JSON.stringify(jsonData)));
       } else if (format === "json" && newFormat === "yaml") {
-        // Convert JSON to YAML
         const jsonData = JSON.parse(mappingRules);
         setMappingRules(yamlStringify(jsonData));
       }
@@ -37,12 +44,11 @@ const DataMapper = () => {
     }
   };
 
-  const handleTransform = () => {
+  const handleTransform = (data: string) => {
     try {
-      // TODO: Implement actual transformation logic
       const formattedOutput = format === "json" 
-        ? jsonFormat(sampleData)
-        : yamlStringify(JSON.parse(sampleData));
+        ? jsonFormat(data)
+        : yamlStringify(JSON.parse(data));
       setOutput(formattedOutput);
       toast({
         title: "Transformation successful",
@@ -54,6 +60,40 @@ const DataMapper = () => {
         description: "Please check your mapping rules and sample data.",
         variant: "destructive",
       });
+    }
+  };
+
+  const addSampleData = () => {
+    const newItem: SampleDataItem = {
+      id: Date.now().toString(),
+      name: `Sample Data ${sampleDataList.length + 1}`,
+      data: ""
+    };
+    setSampleDataList([...sampleDataList, newItem]);
+    setEditingId(newItem.id);
+    setEditingData("");
+  };
+
+  const deleteSampleData = (id: string) => {
+    setSampleDataList(sampleDataList.filter(item => item.id !== id));
+    if (editingId === id) {
+      setEditingId(null);
+      setEditingData("");
+    }
+  };
+
+  const startEditing = (item: SampleDataItem) => {
+    setEditingId(item.id);
+    setEditingData(item.data);
+  };
+
+  const saveEditing = () => {
+    if (editingId) {
+      setSampleDataList(sampleDataList.map(item => 
+        item.id === editingId ? { ...item, data: editingData } : item
+      ));
+      setEditingId(null);
+      setEditingData("");
     }
   };
 
@@ -94,31 +134,86 @@ const DataMapper = () => {
           <Card className="rounded-md border shadow-md">
             <div className="flex items-center justify-between p-2 border-b">
               <div className="text-sm font-medium">Sample Data</div>
+              <Button 
+                onClick={addSampleData}
+                size="sm"
+                variant="ghost"
+                className="h-7 px-3 text-xs"
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Add Sample
+              </Button>
             </div>
-            <Editor
-              value={sampleData}
-              onChange={setSampleData}
-              language="json"
-              className="h-[250px]"
-            />
+            <div className="p-2 space-y-2">
+              {sampleDataList.map(item => (
+                <div key={item.id} className="flex items-center justify-between p-2 bg-muted/30 rounded-md">
+                  <span className="text-sm font-medium">{item.name}</span>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 w-7 p-0"
+                      onClick={() => startEditing(item)}
+                    >
+                      <PenLine className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 w-7 p-0"
+                      onClick={() => handleTransform(item.data)}
+                    >
+                      <Play className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                      onClick={() => deleteSampleData(item.id)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              {sampleDataList.length === 0 && (
+                <div className="text-center py-4 text-sm text-muted-foreground">
+                  No sample data yet. Click "Add Sample" to create one.
+                </div>
+              )}
+            </div>
           </Card>
+
+          {editingId && (
+            <Card className="rounded-md border shadow-md">
+              <div className="flex items-center justify-between p-2 border-b">
+                <div className="text-sm font-medium">Edit Sample Data</div>
+                <Button 
+                  onClick={saveEditing}
+                  size="sm"
+                  className="h-7 px-3 text-xs"
+                >
+                  Save
+                </Button>
+              </div>
+              <Editor
+                value={editingData}
+                onChange={setEditingData}
+                language="json"
+                className="h-[200px]"
+              />
+            </Card>
+          )}
 
           <Card className="rounded-md border shadow-md">
             <div className="flex items-center justify-between p-2 border-b">
               <div className="text-sm font-medium">Output</div>
-              <Button 
-                onClick={handleTransform}
-                size="sm"
-                className="h-7 px-3 text-xs"
-              >
-                Transform
-              </Button>
             </div>
             <Editor
               value={output}
               onChange={setOutput}
               language={format}
-              className="h-[250px]"
+              className="h-[200px]"
               readOnly
             />
           </Card>
