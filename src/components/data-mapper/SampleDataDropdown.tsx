@@ -46,7 +46,11 @@ export const SampleDataDropdown = ({
                 size="sm"
                 variant="ghost"
                 className="h-6 w-6 p-0"
-                onClick={() => onEdit(item)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onEdit(item);
+                }}
               >
                 <PenLine className="h-3 w-3" />
               </Button>
@@ -54,7 +58,11 @@ export const SampleDataDropdown = ({
                 size="sm"
                 variant="ghost"
                 className="h-6 w-6 p-0"
-                onClick={() => onTransform(item.data)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onTransform(item.data);
+                }}
               >
                 <Play className="h-3 w-3" />
               </Button>
@@ -62,7 +70,11 @@ export const SampleDataDropdown = ({
                 size="sm"
                 variant="ghost"
                 className="h-6 w-6 p-0 text-destructive hover:text-destructive"
-                onClick={() => onDelete(item.id)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onDelete(item.id);
+                }}
               >
                 <X className="h-3 w-3" />
               </Button>
@@ -70,7 +82,10 @@ export const SampleDataDropdown = ({
           </DropdownMenuItem>
         ))}
         <DropdownMenuSeparator />
-        <DropdownMenuItem onSelect={onAddSample}>
+        <DropdownMenuItem onSelect={(e) => {
+          e.preventDefault();
+          onAddSample();
+        }}>
           <Plus className="h-4 w-4 mr-1" />
           Add New Sample
         </DropdownMenuItem>

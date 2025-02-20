@@ -10,9 +10,54 @@ import { convertFormat, transformData } from "@/utils/format-converter";
 import { SampleDataDropdown } from "./data-mapper/SampleDataDropdown";
 import { SampleDataEditor } from "./data-mapper/SampleDataEditor";
 
+const initialSamples: SampleDataItem[] = [
+  {
+    id: "1",
+    name: "Simple User Data",
+    data: JSON.stringify({
+      name: "John Doe",
+      age: 30,
+      email: "john@example.com",
+      address: {
+        street: "123 Main St",
+        city: "New York",
+        country: "USA"
+      }
+    }, null, 2)
+  },
+  {
+    id: "2",
+    name: "Product Catalog",
+    data: JSON.stringify({
+      products: [
+        {
+          id: "p1",
+          name: "Laptop",
+          price: 999.99,
+          specs: {
+            cpu: "Intel i7",
+            ram: "16GB",
+            storage: "512GB SSD"
+          }
+        },
+        {
+          id: "p2",
+          name: "Smartphone",
+          price: 699.99,
+          specs: {
+            screen: "6.5 inch",
+            camera: "48MP",
+            storage: "256GB"
+          }
+        }
+      ]
+    }, null, 2)
+  }
+];
+
 const DataMapper = () => {
   const [mappingRules, setMappingRules] = useState("");
-  const [sampleDataList, setSampleDataList] = useState<SampleDataItem[]>([]);
+  const [sampleDataList, setSampleDataList] = useState<SampleDataItem[]>(initialSamples);
   const [output, setOutput] = useState("");
   const [format, setFormat] = useState<Format>("yaml");
   const [editingId, setEditingId] = useState<string | null>(null);
