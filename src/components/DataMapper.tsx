@@ -5,8 +5,8 @@ import { Button } from "./ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { toast } from "./ui/use-toast";
 import Editor from "./Editor";
-import { json as jsonFormat, yaml as yamlFormat } from 'js-beautify';
-import { json2yaml, yaml2json } from 'yaml-js';
+import { json as jsonFormat } from 'js-beautify';
+import { parse as yamlParse, stringify as yamlStringify } from 'yaml';
 
 type Format = "json" | "yaml";
 
@@ -19,11 +19,13 @@ const DataMapper = () => {
   const handleFormatChange = (newFormat: Format) => {
     try {
       if (format === "yaml" && newFormat === "json") {
-        const jsonData = yaml2json(mappingRules);
-        setMappingRules(jsonFormat(jsonData));
+        // Convert YAML to JSON
+        const jsonData = yamlParse(mappingRules);
+        setMappingRules(jsonFormat(JSON.stringify(jsonData)));
       } else if (format === "json" && newFormat === "yaml") {
+        // Convert JSON to YAML
         const jsonData = JSON.parse(mappingRules);
-        setMappingRules(json2yaml(jsonData));
+        setMappingRules(yamlStringify(jsonData));
       }
       setFormat(newFormat);
     } catch (error) {
@@ -40,7 +42,7 @@ const DataMapper = () => {
       // TODO: Implement actual transformation logic
       const formattedOutput = format === "json" 
         ? jsonFormat(sampleData)
-        : json2yaml(JSON.parse(sampleData));
+        : yamlStringify(JSON.parse(sampleData));
       setOutput(formattedOutput);
       toast({
         title: "Transformation successful",
