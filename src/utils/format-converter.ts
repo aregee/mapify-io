@@ -5,19 +5,47 @@ import { Format } from '@/types/data-mapper';
 import { toast } from "@/components/ui/use-toast";
 
 export const convertFormat = (data: string, fromFormat: Format, toFormat: Format): string => {
+  // If formats are the same, no conversion needed
+  if (fromFormat === toFormat) {
+    return data;
+  }
+  
   try {
     if (fromFormat === "yaml" && toFormat === "json") {
-      const jsonData = yamlParse(data);
-      return jsonFormat(JSON.stringify(jsonData));
+      // Safer YAML parsing with error handling
+      try {
+        const jsonData = yamlParse(data);
+        return JSON.stringify(jsonData, null, 2);
+      } catch (yamlError) {
+        console.error("YAML parsing error:", yamlError);
+        toast({
+          title: "Format conversion failed",
+          description: "Invalid YAML format. Please check your syntax.",
+          variant: "destructive",
+        });
+        return data;
+      }
     } else if (fromFormat === "json" && toFormat === "yaml") {
-      const jsonData = JSON.parse(data);
-      return yamlStringify(jsonData);
+      // Safer JSON parsing with error handling
+      try {
+        const jsonData = JSON.parse(data);
+        return yamlStringify(jsonData);
+      } catch (jsonError) {
+        console.error("JSON parsing error:", jsonError);
+        toast({
+          title: "Format conversion failed",
+          description: "Invalid JSON format. Please check your syntax.",
+          variant: "destructive",
+        });
+        return data;
+      }
     }
     return data;
   } catch (error) {
+    console.error("General conversion error:", error);
     toast({
       title: "Format conversion failed",
-      description: `Please ensure your input is valid ${fromFormat.toUpperCase()}`,
+      description: `Could not convert from ${fromFormat} to ${toFormat}`,
       variant: "destructive",
     });
     return data;

@@ -142,9 +142,14 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl, baseUrl = 'http://local
   };
 
   const handleFormatChange = (newFormat: Format) => {
+    if (newFormat === format) {
+      return; // No need to convert if format is the same
+    }
+
     try {
-      const converted = convertFormat(mappingRules, format, newFormat);
-      setMappingRules(converted);
+      // Convert the mapping rules
+      const convertedRules = convertFormat(mappingRules, format, newFormat);
+      setMappingRules(convertedRules);
       
       // Also convert the output if it exists
       if (output) {
@@ -152,12 +157,19 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl, baseUrl = 'http://local
         setOutput(convertedOutput);
       }
       
+      // Set the new format
       setFormat(newFormat);
+      
+      // Show success toast
+      toast({
+        title: `Format changed to ${newFormat.toUpperCase()}`,
+        description: "Content successfully converted to the new format."
+      });
     } catch (error) {
       console.error("Format conversion error:", error);
       toast({
         title: "Format conversion failed",
-        description: "Failed to convert between formats. Check your syntax.",
+        description: "Failed to convert between formats. Keeping original format.",
         variant: "destructive",
       });
     }
