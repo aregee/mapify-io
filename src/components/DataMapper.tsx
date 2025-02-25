@@ -370,10 +370,12 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl, baseUrl = 'http://local
     setIsEditingYaml(isYaml);
   };
 
-  const handleSaveSampleData = (id: string, data: string, isYaml: boolean, name?: string) => {
+  const handleSaveSampleData = (data: string, isYaml: boolean, name?: string) => {
+    if (!editingId) return;
+    
     setSampleDataList(prevList => 
       prevList.map(item => 
-        item.id === id 
+        item.id === editingId 
           ? { ...item, data, isYaml, name: name || item.name } 
           : item
       )
@@ -463,7 +465,7 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl, baseUrl = 'http://local
               <SampleDataEditor
                 data={editingData}
                 isYaml={isEditingYaml}
-                onSave={(data, isYaml, name) => handleSaveSampleData(editingId, data, isYaml, name)}
+                onSave={handleSaveSampleData}
                 onCancel={handleCancelEdit}
                 allowRename
               />
