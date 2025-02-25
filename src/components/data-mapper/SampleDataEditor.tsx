@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import Editor from "@/components/Editor";
 import {
@@ -9,6 +9,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { parse as yamlParse, stringify as yamlStringify } from 'yaml';
 
 interface SampleDataEditorProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ interface SampleDataEditorProps {
   value: string;
   onChange: (value: string) => void;
   onSave: () => void;
+  isYaml?: boolean;
 }
 
 export const SampleDataEditor = ({
@@ -24,7 +26,14 @@ export const SampleDataEditor = ({
   value,
   onChange,
   onSave,
+  isYaml = false
 }: SampleDataEditorProps) => {
+  const [editorLanguage, setEditorLanguage] = useState(isYaml ? "yaml" : "json");
+  
+  useEffect(() => {
+    setEditorLanguage(isYaml ? "yaml" : "json");
+  }, [isYaml]);
+
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetContent className="w-[90vw] sm:max-w-[600px]">
@@ -39,7 +48,7 @@ export const SampleDataEditor = ({
             <Editor
               value={value}
               onChange={onChange}
-              language="json"
+              language={editorLanguage}
               height="100%"
             />
           </div>

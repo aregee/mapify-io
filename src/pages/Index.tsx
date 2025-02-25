@@ -2,7 +2,13 @@
 import DataMapper from "@/components/DataMapper";
 
 const Index = () => {
-  return <DataMapper apiUrl="http://localhost:3031/mappings/42"/>;
+  // Use the server URL, adjust if needed
+  const baseUrl = "http://localhost:3031";
+  
+  return <DataMapper 
+    apiUrl={`${baseUrl}/mappings/42`}
+    baseUrl={baseUrl}
+  />;
 };
 
 export default Index;

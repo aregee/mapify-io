@@ -16,7 +16,7 @@ interface SampleDataDropdownProps {
   sampleDataList: SampleDataItem[];
   onAddSample: () => void;
   onEdit: (item: SampleDataItem) => void;
-  onTransform: (data: string) => void;
+  onTransform: (data: string, isYaml?: boolean) => void;
   onDelete: (id: string) => void;
 }
 
@@ -35,12 +35,14 @@ export const SampleDataDropdown = ({
           Samples ({sampleDataList.length})
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-[200px]">
+      <DropdownMenuContent align="end" className="w-[220px]">
         <DropdownMenuLabel>Sample Data</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {sampleDataList.map(item => (
           <DropdownMenuItem key={item.id} className="flex justify-between">
-            <span>{item.name}</span>
+            <span className="flex-1 truncate mr-1" title={item.name}>
+              {item.name} {item.isYaml && <span className="text-xs text-muted-foreground">(YAML)</span>}
+            </span>
             <div className="flex items-center space-x-1">
               <Button
                 size="sm"
@@ -61,7 +63,7 @@ export const SampleDataDropdown = ({
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  onTransform(item.data);
+                  onTransform(item.data, item.isYaml);
                 }}
               >
                 <Play className="h-3 w-3" />

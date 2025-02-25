@@ -1,15 +1,15 @@
-
 import React, { useState, useEffect } from "react";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
 import Editor from "./Editor";
-import { X } from "lucide-react";
-import { Format, SampleDataItem } from "@/types/data-mapper";
+import { X, Play } from "lucide-react";
+import { Format, SampleDataItem, TransformResponse } from "@/types/data-mapper";
 import { convertFormat, transformData } from "@/utils/format-converter";
 import { SampleDataDropdown } from "./data-mapper/SampleDataDropdown";
 import { SampleDataEditor } from "./data-mapper/SampleDataEditor";
 import { toast } from "./ui/use-toast";
+import { parse as yamlParse, stringify as yamlStringify } from 'yaml';
 
 interface MappingData {
   id: number;
@@ -26,17 +26,20 @@ interface MappingData {
 
 interface DataMapperProps {
   apiUrl?: string;
+  baseUrl?: string;
 }
 
-const DataMapper: React.FC<DataMapperProps> = ({ apiUrl }) => {
+const DataMapper: React.FC<DataMapperProps> = ({ apiUrl, baseUrl = 'http://localhost:3031' }) => {
   const [mappingRules, setMappingRules] = useState("");
   const [sampleDataList, setSampleDataList] = useState<SampleDataItem[]>([]);
   const [output, setOutput] = useState("");
   const [format, setFormat] = useState<Format>("yaml");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingData, setEditingData] = useState("");
+  const [isEditingYaml, setIsEditingYaml] = useState(false);
   const [showOutput, setShowOutput] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [transformLoading, setTransformLoading] = useState(false);
   const [mappingData, setMappingData] = useState<MappingData | null>(null);
 
   useEffect(() => {
@@ -63,59 +66,21 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl }) => {
       
       // Convert test_data to our sample data format
       if (data.content.test_data && Array.isArray(data.content.test_data)) {
-        const samples = data.content.test_data.map((item, index) => ({
-          id: `sample-${index}`,
-          name: `Sample ${index + 1}`,
-          data: typeof item === 'string' ? item : JSON.stringify(item, null, 2)
-        }));
+        const samples = data.content.test_data.map((item, index) => {
+          const isYaml = typeof item.data === 'string' && item.data.trim().startsWith('data:');
+          return {
+            id: item.id || `sample-${index}`,
+            name: item.dataTitle || `Sample ${index + 1}`,
+            data: item.data || '',
+            isYaml: isYaml,
+            dataTitle: item.dataTitle
+          };
+        });
         
-        setSampleDataList(samples);
+        setSampleDataList(samples.length > 0 ? samples : getDefaultSamples());
       } else {
         // Add default samples if none exist
-        setSampleDataList([
-          {
-            id: "1",
-            name: "Simple User Data",
-            data: JSON.stringify({
-              name: "John Doe",
-              age: 30,
-              email: "john@example.com",
-              address: {
-                street: "123 Main St",
-                city: "New York",
-                country: "USA"
-              }
-            }, null, 2)
-          },
-          {
-            id: "2",
-            name: "Product Catalog",
-            data: JSON.stringify({
-              products: [
-                {
-                  id: "p1",
-                  name: "Laptop",
-                  price: 999.99,
-                  specs: {
-                    cpu: "Intel i7",
-                    ram: "16GB",
-                    storage: "512GB SSD"
-                  }
-                },
-                {
-                  id: "p2",
-                  name: "Smartphone",
-                  price: 699.99,
-                  specs: {
-                    screen: "6.5 inch",
-                    camera: "48MP",
-                    storage: "256GB"
-                  }
-                }
-              ]
-            }, null, 2)
-          }
-        ]);
+        setSampleDataList(getDefaultSamples());
       }
       
       toast({
@@ -129,9 +94,48 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl }) => {
         description: "Failed to load mapping configuration. Please try again.",
         variant: "destructive",
       });
+      setSampleDataList(getDefaultSamples());
     } finally {
       setLoading(false);
     }
+  };
+
+  const getDefaultSamples = (): SampleDataItem[] => {
+    return [
+      {
+        id: "1",
+        name: "Simple User Data",
+        data: JSON.stringify({
+          name: "John Doe",
+          age: 30,
+          email: "john@example.com",
+          address: {
+            street: "123 Main St",
+            city: "New York",
+            country: "USA"
+          }
+        }, null, 2),
+        isYaml: false
+      },
+      {
+        id: "2",
+        name: "YAML Sample",
+        data: `data:
+  meta: 
+    Key: "somekey"
+    Bucket: "somebucket"
+  user:
+    name: "Jane Smith"
+    age: 28
+    email: "jane@example.com"
+    address:
+      street: "456 Oak Ave"
+      city: "San Francisco"
+      country: "USA"`,
+        isYaml: true,
+        dataTitle: "yaml_sample"
+      }
+    ];
   };
 
   const handleFormatChange = (newFormat: Format) => {
@@ -140,21 +144,137 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl }) => {
     setFormat(newFormat);
   };
 
-  const handleTransform = (data: string) => {
-    const transformed = transformData(data, format);
-    setOutput(transformed);
-    setShowOutput(true);
+  const handleTransform = async (data: string, isYaml: boolean = false) => {
+    setTransformLoading(true);
+    try {
+      // If we have mapping data with an ID, use the apply endpoint
+      if (mappingData?.id) {
+        await transformWithApplyEndpoint(data, isYaml);
+      } else {
+        // Otherwise use the test endpoint
+        await transformWithTestEndpoint(data, isYaml);
+      }
+    } catch (error) {
+      console.error("Transform error:", error);
+      toast({
+        title: "Transformation failed",
+        description: `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
+        variant: "destructive",
+      });
+      setOutput("Error during transformation. Check console for details.");
+    } finally {
+      setTransformLoading(false);
+      setShowOutput(true);
+    }
+  };
+
+  const transformWithApplyEndpoint = async (data: string, isYaml: boolean = false) => {
+    if (!mappingData?.id) {
+      throw new Error("No mapping ID available");
+    }
+
+    let parsedData;
+    if (isYaml) {
+      try {
+        parsedData = yamlParse(data);
+      } catch (e) {
+        throw new Error(`YAML parsing error: ${e instanceof Error ? e.message : "Invalid YAML"}`);
+      }
+    } else {
+      try {
+        parsedData = JSON.parse(data);
+      } catch (e) {
+        throw new Error(`JSON parsing error: ${e instanceof Error ? e.message : "Invalid JSON"}`);
+      }
+    }
+
+    const response = await fetch(`${baseUrl}/mappings/${mappingData.id}/apply`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ data: parsedData })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`API error (${response.status}): ${errorText}`);
+    }
+
+    const result = await response.json();
+    
+    // Format the output based on current format preference
+    if (format === "yaml") {
+      setOutput(yamlStringify(result));
+    } else {
+      setOutput(JSON.stringify(result, null, 2));
+    }
+
+    toast({
+      title: "Transformation successful",
+      description: "Data has been transformed using the apply endpoint.",
+    });
+  };
+
+  const transformWithTestEndpoint = async (data: string, isYaml: boolean = false) => {
+    let requestBody;
+    
+    if (isYaml) {
+      // For YAML data, we need to create a specific format with template and scope
+      const yamlRequest = `template: |\n${mappingRules.split('\n').map(line => `  ${line}`).join('\n')}\nscope: |\n${data.split('\n').map(line => `  ${line}`).join('\n')}`;
+      requestBody = yamlRequest;
+    } else {
+      // For JSON data
+      try {
+        const jsonData = JSON.parse(data);
+        requestBody = yamlStringify({
+          template: mappingRules,
+          scope: jsonData
+        });
+      } catch (e) {
+        throw new Error(`JSON parsing error: ${e instanceof Error ? e.message : "Invalid JSON"}`);
+      }
+    }
+
+    const response = await fetch(`${baseUrl}/mappings/test`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-yaml'
+      },
+      body: requestBody
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`API error (${response.status}): ${errorText}`);
+    }
+
+    const result = await response.json();
+    
+    // Format the output based on current format preference
+    if (format === "yaml") {
+      setOutput(yamlStringify(result));
+    } else {
+      setOutput(JSON.stringify(result, null, 2));
+    }
+
+    toast({
+      title: "Transformation successful",
+      description: "Data has been transformed using the test endpoint.",
+    });
   };
 
   const addSampleData = () => {
     const newItem: SampleDataItem = {
       id: Date.now().toString(),
       name: `Sample Data ${sampleDataList.length + 1}`,
-      data: ""
+      data: "",
+      isYaml: false
     };
     setSampleDataList([...sampleDataList, newItem]);
     setEditingId(newItem.id);
     setEditingData("");
+    setIsEditingYaml(false);
   };
 
   const deleteSampleData = (id: string) => {
@@ -162,21 +282,28 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl }) => {
     if (editingId === id) {
       setEditingId(null);
       setEditingData("");
+      setIsEditingYaml(false);
     }
   };
 
   const startEditing = (item: SampleDataItem) => {
     setEditingId(item.id);
     setEditingData(item.data);
+    setIsEditingYaml(!!item.isYaml);
   };
 
   const saveEditing = () => {
     if (editingId) {
       setSampleDataList(sampleDataList.map(item => 
-        item.id === editingId ? { ...item, data: editingData } : item
+        item.id === editingId ? { 
+          ...item, 
+          data: editingData,
+          isYaml: isEditingYaml 
+        } : item
       ));
       setEditingId(null);
       setEditingData("");
+      setIsEditingYaml(false);
     }
   };
 
@@ -194,7 +321,7 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl }) => {
               sampleDataList={sampleDataList}
               onAddSample={addSampleData}
               onEdit={startEditing}
-              onTransform={handleTransform}
+              onTransform={(data, isYaml) => handleTransform(data, isYaml)}
               onDelete={deleteSampleData}
             />
             <Tabs value={format} onValueChange={handleFormatChange as any}>
@@ -218,6 +345,7 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl }) => {
           <Card className="rounded-md border shadow-md flex flex-col">
             <div className="flex items-center justify-between p-2 border-b">
               <div className="text-sm font-medium">Mapping Rules</div>
+              {transformLoading && <div className="text-xs text-muted-foreground">Processing...</div>}
             </div>
             <div className="flex-1 w-full">
               <Editor
@@ -260,6 +388,7 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl }) => {
         value={editingData}
         onChange={setEditingData}
         onSave={saveEditing}
+        isYaml={isEditingYaml}
       />
     </div>
   );
