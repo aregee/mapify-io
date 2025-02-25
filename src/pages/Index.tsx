@@ -6,7 +6,7 @@ const Index = () => {
   const baseUrl = "http://localhost:3031";
   
   return <DataMapper 
-    apiUrl={`${baseUrl}/mappings/42`}
+    apiUrl={`${baseUrl}/mappings/15`}
     baseUrl={baseUrl}
   />;
 };

@@ -148,7 +148,7 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl, baseUrl = 'http://local
     setTransformLoading(true);
     try {
       // If we have mapping data with an ID, use the apply endpoint
-      if (mappingData?.id) {
+      if (false) {
         await transformWithApplyEndpoint(data, isYaml);
       } else {
         // Otherwise use the test endpoint
@@ -174,6 +174,7 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl, baseUrl = 'http://local
     }
 
     let parsedData;
+    console.log(isYaml);
     if (isYaml) {
       try {
         parsedData = yamlParse(data);
@@ -221,7 +222,7 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl, baseUrl = 'http://local
     
     if (isYaml) {
       // For YAML data, we need to create a specific format with template and scope
-      const yamlRequest = `template: |\n${mappingRules.split('\n').map(line => `  ${line}`).join('\n')}\nscope: |\n${data.split('\n').map(line => `  ${line}`).join('\n')}`;
+      const yamlRequest = `template: \n${mappingRules.split('\n').map(line => `  ${line}`).join('\n')}\nscope: \n${data.split('\n').map(line => `  ${line}`).join('\n')}`;
       requestBody = yamlRequest;
     } else {
       // For JSON data
