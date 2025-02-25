@@ -307,3 +307,200 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl, baseUrl = 'http://local
     }
 
     setSaveLoading(true);
+    try {
+      // Prepare the mapping data for saving
+      const updatedMapping = {
+        content: {
+          yaml: mappingRules,
+          tags: mappingData.content.tags || [],
+          test_data: mappingData.content.test_data || []
+        }
+      };
+
+      const response = await fetch(`${baseUrl}/mappings/${mappingData.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedMapping),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`API error (${response.status}): ${errorText}`);
+      }
+
+      const result = await response.json();
+      
+      // Update the mapping data state with the new data
+      setMappingData({
+        ...mappingData,
+        content: {
+          ...mappingData.content,
+          yaml: mappingRules
+        },
+        updated_at: new Date().toISOString()
+      });
+
+      toast({
+        title: "Save successful",
+        description: "Mapping configuration has been saved.",
+      });
+    } catch (error) {
+      console.error("Save error:", error);
+      toast({
+        title: "Save failed",
+        description: `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
+        variant: "destructive",
+      });
+    } finally {
+      setSaveLoading(false);
+    }
+  };
+
+  const viewMappingHistory = () => {
+    if (mappingData?.id) {
+      navigate(ROUTES.MAPPING_HISTORY(mappingData.id));
+    }
+  };
+
+  const handleEditSampleData = (id: string, data: string, isYaml: boolean) => {
+    setEditingId(id);
+    setEditingData(data);
+    setIsEditingYaml(isYaml);
+  };
+
+  const handleSaveSampleData = (id: string, data: string, isYaml: boolean, name?: string) => {
+    setSampleDataList(prevList => 
+      prevList.map(item => 
+        item.id === id 
+          ? { ...item, data, isYaml, name: name || item.name } 
+          : item
+      )
+    );
+    setEditingId(null);
+    setEditingData("");
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditingData("");
+  };
+  
+  return (
+    <div className="container mx-auto p-4 max-w-7xl">
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold">
+          {mappingData ? mappingData.title : "Data Mapper"}
+        </h1>
+        <div className="flex space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={viewMappingHistory}
+            disabled={!mappingData?.id}
+          >
+            <History className="mr-2 h-4 w-4" />
+            History
+          </Button>
+          <Button
+            variant="default"
+            size="sm"
+            onClick={saveMapping}
+            disabled={saveLoading || !mappingData}
+          >
+            {saveLoading ? "Saving..." : "Save"}
+            <Save className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <Card className="rounded-md border shadow-md flex flex-col h-96">
+          <div className="flex items-center justify-between p-2 border-b">
+            <div className="text-sm font-medium">Mapping Rules</div>
+            <Tabs value={format} onValueChange={(v) => handleFormatChange(v as Format)}>
+              <TabsList className="h-8">
+                <TabsTrigger value="yaml" className="text-xs">YAML</TabsTrigger>
+                <TabsTrigger value="json" className="text-xs">JSON</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+          <div className="flex-1 w-full overflow-auto">
+            <Editor
+              value={mappingRules}
+              onChange={setMappingRules}
+              language={format}
+            />
+          </div>
+        </Card>
+
+        <Card className="rounded-md border shadow-md flex flex-col h-96">
+          <div className="flex items-center justify-between p-2 border-b">
+            <div className="flex items-center">
+              <div className="text-sm font-medium">Input Data</div>
+              <div className="ml-2">
+                <SampleDataDropdown 
+                  samples={sampleDataList} 
+                  onEdit={handleEditSampleData}
+                  onSelect={(sample) => {
+                    handleTransform(sample.data, sample.isYaml);
+                  }}
+                />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Tabs value={transformMode} onValueChange={(v) => setTransformMode(v as TransformMode)}>
+                <TabsList className="h-8">
+                  <TabsTrigger value="test" className="text-xs">Test</TabsTrigger>
+                  <TabsTrigger value="apply" className="text-xs" disabled={!mappingData?.id}>Apply</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+          </div>
+          <div className="flex-1 w-full overflow-auto">
+            {editingId ? (
+              <SampleDataEditor
+                data={editingData}
+                isYaml={isEditingYaml}
+                onSave={(data, isYaml, name) => handleSaveSampleData(editingId, data, isYaml, name)}
+                onCancel={handleCancelEdit}
+                allowRename
+              />
+            ) : (
+              <div className="h-full flex items-center justify-center text-gray-500 italic p-4">
+                <p>Select a sample from the dropdown or click Transform to test the mapping rules.</p>
+              </div>
+            )}
+          </div>
+        </Card>
+      </div>
+
+      <Card className={`rounded-md border shadow-md transition-all duration-300 ease-in-out overflow-hidden ${showOutput ? 'h-96' : 'h-12'}`}>
+        <div className="flex items-center justify-between p-2 border-b">
+          <div className="text-sm font-medium">Output</div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6"
+            onClick={() => setShowOutput(!showOutput)}
+          >
+            {showOutput ? <X className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+          </Button>
+        </div>
+        {showOutput && (
+          <div className="flex-1 w-full h-[calc(100%-36px)] overflow-auto">
+            <Editor
+              value={output}
+              onChange={setOutput}
+              language={format}
+              readOnly
+            />
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+};
+
+export default DataMapper;
