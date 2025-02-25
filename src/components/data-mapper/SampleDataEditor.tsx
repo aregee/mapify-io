@@ -10,6 +10,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { parse as yamlParse, stringify as yamlStringify } from 'yaml';
+import { Format } from "@/types/data-mapper";
 
 interface SampleDataEditorProps {
   isOpen: boolean;
@@ -28,7 +29,7 @@ export const SampleDataEditor = ({
   onSave,
   isYaml = false
 }: SampleDataEditorProps) => {
-  const [editorLanguage, setEditorLanguage] = useState(isYaml ? "yaml" : "json");
+  const [editorLanguage, setEditorLanguage] = useState<Format>(isYaml ? "yaml" : "json");
   
   useEffect(() => {
     setEditorLanguage(isYaml ? "yaml" : "json");
