@@ -1,0 +1,172 @@
+
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { ArrowRight, Plus, Search } from "lucide-react";
+import { Mapping } from "@/types/mapping";
+import { format } from "date-fns";
+import { toast } from "@/components/ui/use-toast";
+import CreateMapping from "@/components/CreateMapping";
+
+const MappingsList = () => {
+  const [mappings, setMappings] = useState<Mapping[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isCreatingMapping, setIsCreatingMapping] = useState(false);
+  const navigate = useNavigate();
+
+  const baseUrl = "http://localhost:3031";
+
+  useEffect(() => {
+    fetchMappings();
+  }, []);
+
+  const fetchMappings = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${baseUrl}/mappings`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      const data = await response.json();
+      setMappings(data);
+    } catch (error) {
+      console.error("Error fetching mappings:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load mappings. Please try again.",
+        variant: "destructive",
+      });
+      setMappings([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMappingClick = (mappingId: number) => {
+    navigate(`/mappings/${mappingId}`);
+  };
+
+  const filteredMappings = mappings.filter(mapping => 
+    mapping.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    mapping.content.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
+  const formatDate = (dateString: string) => {
+    try {
+      return format(new Date(dateString), "MMM d, yyyy");
+    } catch (e) {
+      return dateString;
+    }
+  };
+
+  const handleCreateMapping = () => {
+    setIsCreatingMapping(true);
+  };
+
+  const handleCreationSuccess = () => {
+    setIsCreatingMapping(false);
+    fetchMappings(); // Refresh the list
+    toast({
+      title: "Success",
+      description: "New mapping created successfully",
+    });
+  };
+
+  return (
+    <div className="container max-w-5xl mx-auto py-8">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold">Data Mappings</h1>
+        <Button onClick={handleCreateMapping}>
+          <Plus className="mr-2 h-4 w-4" />
+          Create New Mapping
+        </Button>
+      </div>
+
+      <div className="relative mb-6">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          placeholder="Search by title or tags..."
+          className="pl-10"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+      </div>
+
+      {loading ? (
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      ) : filteredMappings.length === 0 ? (
+        <div className="flex flex-col items-center justify-center h-64">
+          <p className="text-lg text-muted-foreground mb-4">No mappings found</p>
+          <Button variant="outline" onClick={handleCreateMapping}>
+            <Plus className="mr-2 h-4 w-4" />
+            Create your first mapping
+          </Button>
+        </div>
+      ) : (
+        <div className="grid gap-6">
+          {filteredMappings.map((mapping) => (
+            <Card key={mapping.id} className="overflow-hidden transition-all hover:shadow-md">
+              <CardHeader className="pb-3">
+                <div className="flex justify-between items-start">
+                  <CardTitle className="text-xl">{mapping.title}</CardTitle>
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    onClick={() => handleMappingClick(mapping.id)}
+                  >
+                    <ArrowRight className="h-5 w-5" />
+                  </Button>
+                </div>
+                <CardDescription>
+                  Created {formatDate(mapping.created_at)}
+                  {mapping.updated_at !== mapping.created_at && 
+                    ` • Updated ${formatDate(mapping.updated_at)}`}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {mapping.content.tags.map((tag, index) => (
+                    <Badge key={index} variant="secondary">{tag}</Badge>
+                  ))}
+                </div>
+                <Separator className="my-3" />
+                <div className="text-sm text-muted-foreground">
+                  <p className="line-clamp-2 font-mono text-xs bg-muted p-2 rounded">
+                    {mapping.content.yaml.substring(0, 150)}
+                    {mapping.content.yaml.length > 150 ? '...' : ''}
+                  </p>
+                </div>
+              </CardContent>
+              <CardFooter className="pt-0">
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => handleMappingClick(mapping.id)}
+                >
+                  Open Mapper
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      <CreateMapping 
+        open={isCreatingMapping} 
+        onOpenChange={setIsCreatingMapping} 
+        onSuccess={handleCreationSuccess}
+        baseUrl={baseUrl}
+      />
+    </div>
+  );
+};
+
+export default MappingsList;
