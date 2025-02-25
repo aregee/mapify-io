@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from "react";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
 import Editor from "./Editor";
-import { X, Play } from "lucide-react";
-import { Format, SampleDataItem, TransformResponse } from "@/types/data-mapper";
+import { X, Play, Save } from "lucide-react";
+import { Format, SampleDataItem, TransformResponse, TransformMode } from "@/types/data-mapper";
 import { convertFormat, transformData } from "@/utils/format-converter";
 import { SampleDataDropdown } from "./data-mapper/SampleDataDropdown";
 import { SampleDataEditor } from "./data-mapper/SampleDataEditor";
@@ -40,7 +41,9 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl, baseUrl = 'http://local
   const [showOutput, setShowOutput] = useState(false);
   const [loading, setLoading] = useState(false);
   const [transformLoading, setTransformLoading] = useState(false);
+  const [saveLoading, setSaveLoading] = useState(false);
   const [mappingData, setMappingData] = useState<MappingData | null>(null);
+  const [transformMode, setTransformMode] = useState<TransformMode>("test");
 
   useEffect(() => {
     if (apiUrl) {
@@ -139,19 +142,26 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl, baseUrl = 'http://local
   };
 
   const handleFormatChange = (newFormat: Format) => {
-    const converted = convertFormat(mappingRules, format, newFormat);
-    setMappingRules(converted);
-    setFormat(newFormat);
+    try {
+      const converted = convertFormat(mappingRules, format, newFormat);
+      setMappingRules(converted);
+      setFormat(newFormat);
+    } catch (error) {
+      console.error("Format conversion error:", error);
+      toast({
+        title: "Format conversion failed",
+        description: "Failed to convert between formats. Check your syntax.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleTransform = async (data: string, isYaml: boolean = false) => {
     setTransformLoading(true);
     try {
-      // If we have mapping data with an ID, use the apply endpoint
-      if (false) {
+      if (transformMode === "apply" && mappingData?.id) {
         await transformWithApplyEndpoint(data, isYaml);
       } else {
-        // Otherwise use the test endpoint
         await transformWithTestEndpoint(data, isYaml);
       }
     } catch (error) {
@@ -174,7 +184,6 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl, baseUrl = 'http://local
     }
 
     let parsedData;
-    console.log(isYaml);
     if (isYaml) {
       try {
         parsedData = yamlParse(data);
@@ -265,6 +274,66 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl, baseUrl = 'http://local
     });
   };
 
+  const saveMapping = async () => {
+    if (!mappingData?.id) {
+      toast({
+        title: "Save failed",
+        description: "No mapping ID available to save changes.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSaveLoading(true);
+    try {
+      // Prepare the test_data from sampleDataList
+      const testData = sampleDataList.map(item => ({
+        id: item.id,
+        data: item.data,
+        dataTitle: item.name || item.dataTitle
+      }));
+
+      // Prepare the data for the PUT request
+      const data = {
+        content: {
+          yaml: mappingRules,
+          tags: mappingData.content.tags || [],
+          test_data: testData
+        }
+      };
+
+      const response = await fetch(`${baseUrl}/mappings/${mappingData.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`API error (${response.status}): ${errorText}`);
+      }
+
+      const result = await response.json();
+      setMappingData(result);
+
+      toast({
+        title: "Mapping saved",
+        description: "Your changes have been saved successfully.",
+      });
+    } catch (error) {
+      console.error("Save error:", error);
+      toast({
+        title: "Save failed",
+        description: `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
+        variant: "destructive",
+      });
+    } finally {
+      setSaveLoading(false);
+    }
+  };
+
   const addSampleData = () => {
     const newItem: SampleDataItem = {
       id: Date.now().toString(),
@@ -308,6 +377,14 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl, baseUrl = 'http://local
     }
   };
 
+  const toggleTransformMode = () => {
+    setTransformMode(prev => prev === "test" ? "apply" : "test");
+    toast({
+      title: `Transform mode: ${transformMode === "test" ? "Apply" : "Test"}`,
+      description: `Now using the ${transformMode === "test" ? "apply" : "test"} endpoint for transformations.`,
+    });
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-background animate-fade-in">
       <header className="border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -318,19 +395,42 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl, baseUrl = 'http://local
             </h1>
           </div>
           <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
-            <SampleDataDropdown
-              sampleDataList={sampleDataList}
-              onAddSample={addSampleData}
-              onEdit={startEditing}
-              onTransform={(data, isYaml) => handleTransform(data, isYaml)}
-              onDelete={deleteSampleData}
-            />
-            <Tabs value={format} onValueChange={handleFormatChange as any}>
-              <TabsList className="h-8">
-                <TabsTrigger value="yaml" className="text-xs">YAML</TabsTrigger>
-                <TabsTrigger value="json" className="text-xs">JSON</TabsTrigger>
-              </TabsList>
-            </Tabs>
+            <div className="flex items-center space-x-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-8"
+                onClick={toggleTransformMode}
+              >
+                Mode: {transformMode === "test" ? "Test" : "Apply"}
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-8"
+                onClick={saveMapping}
+                disabled={saveLoading || !mappingData?.id}
+              >
+                {saveLoading ? "Saving..." : "Save"}
+                <Save className="ml-1 h-4 w-4" />
+              </Button>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <SampleDataDropdown
+                sampleDataList={sampleDataList}
+                onAddSample={addSampleData}
+                onEdit={startEditing}
+                onTransform={(data, isYaml) => handleTransform(data, isYaml)}
+                onDelete={deleteSampleData}
+              />
+              <Tabs value={format} onValueChange={(value) => handleFormatChange(value as Format)}>
+                <TabsList className="h-8">
+                  <TabsTrigger value="yaml" className="text-xs">YAML</TabsTrigger>
+                  <TabsTrigger value="json" className="text-xs">JSON</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
           </div>
         </div>
       </header>
