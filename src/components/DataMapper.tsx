@@ -509,6 +509,7 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl, baseUrl = 'http://local
         onChange={setEditingData}
         onSave={saveEditing}
         isYaml={isEditingYaml}
+        globalFormat={format}
       />
     </div>
   );

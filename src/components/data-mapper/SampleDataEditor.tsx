@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/sheet";
 import { parse as yamlParse, stringify as yamlStringify } from 'yaml';
 import { Format } from "@/types/data-mapper";
+import { convertFormat } from "@/utils/format-converter";
 
 interface SampleDataEditorProps {
   isOpen: boolean;
@@ -19,6 +20,7 @@ interface SampleDataEditorProps {
   onChange: (value: string) => void;
   onSave: () => void;
   isYaml?: boolean;
+  globalFormat?: Format;
 }
 
 export const SampleDataEditor = ({
@@ -27,13 +29,35 @@ export const SampleDataEditor = ({
   value,
   onChange,
   onSave,
-  isYaml = false
+  isYaml = false,
+  globalFormat = "yaml"
 }: SampleDataEditorProps) => {
-  const [editorLanguage, setEditorLanguage] = useState<Format>(isYaml ? "yaml" : "json");
+  // Use the editor language based on whether the sample is YAML or the global format
+  const editorLanguage: Format = isYaml ? "yaml" : globalFormat;
   
+  // Convert the value to the correct format if needed when opening the editor
   useEffect(() => {
-    setEditorLanguage(isYaml ? "yaml" : "json");
-  }, [isYaml]);
+    if (isOpen && value) {
+      // If the sample is not YAML but global format is YAML, convert JSON to YAML
+      if (!isYaml && globalFormat === "yaml" && value) {
+        try {
+          const jsonData = JSON.parse(value);
+          onChange(yamlStringify(jsonData));
+        } catch (error) {
+          console.error("Failed to convert JSON to YAML:", error);
+        }
+      }
+      // If the sample is not JSON but global format is JSON, convert YAML to JSON
+      else if (isYaml && globalFormat === "json" && value) {
+        try {
+          const jsonData = yamlParse(value);
+          onChange(JSON.stringify(jsonData, null, 2));
+        } catch (error) {
+          console.error("Failed to convert YAML to JSON:", error);
+        }
+      }
+    }
+  }, [isOpen, globalFormat, isYaml, value]);
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
