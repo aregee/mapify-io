@@ -5,6 +5,7 @@ import { Button } from "./ui/button";
 import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
 import Editor from "./Editor";
 import { X } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { Format, SampleDataItem } from "@/types/data-mapper";
 import { convertFormat, transformData } from "@/utils/format-converter";
 import { SampleDataDropdown } from "./data-mapper/SampleDataDropdown";
@@ -55,14 +56,30 @@ const initialSamples: SampleDataItem[] = [
   }
 ];
 
-const DataMapper = () => {
+interface DataMapperProps {
+  apiUrl: string; // API URL to fetch data
+}
+
+const fetchMapping = async (url: string) => {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Failed to fetch data");
+  return res.json();
+};
+
+
+const DataMapper:  React.FC<DataMapperProps>  = ({apiUrl}) => {
   const [mappingRules, setMappingRules] = useState("");
+   const { data, isLoading, error } = useQuery({
+    queryKey: ["mapping", apiUrl],
+    queryFn: () => fetchMapping(apiUrl),
+  });
   const [sampleDataList, setSampleDataList] = useState<SampleDataItem[]>(initialSamples);
   const [output, setOutput] = useState("");
   const [format, setFormat] = useState<Format>("yaml");
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editingData, setEditingData] = useState("");
+  const [editingData, setEditingData] = useState(data);
   const [showOutput, setShowOutput] = useState(false);
+  
 
   const handleFormatChange = (newFormat: Format) => {
     const converted = convertFormat(mappingRules, format, newFormat);
