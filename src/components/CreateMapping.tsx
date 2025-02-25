@@ -8,19 +8,20 @@ import { Badge } from "@/components/ui/badge";
 import { X } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { CreateMappingRequest } from "@/types/mapping";
+import { API_CONFIG } from "@/config/constants";
 
 interface CreateMappingProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
-  baseUrl: string;
+  baseUrl?: string;
 }
 
 const CreateMapping: React.FC<CreateMappingProps> = ({ 
   open, 
   onOpenChange,
   onSuccess,
-  baseUrl
+  baseUrl = API_CONFIG.BASE_URL
 }) => {
   const [title, setTitle] = useState("");
   const [tagInput, setTagInput] = useState("");
@@ -65,7 +66,7 @@ const CreateMapping: React.FC<CreateMappingProps> = ({
     };
 
     try {
-      const response = await fetch(`${baseUrl}/mappings`, {
+      const response = await fetch(`${baseUrl}${API_CONFIG.ENDPOINTS.MAPPINGS}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

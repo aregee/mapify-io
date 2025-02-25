@@ -11,6 +11,7 @@ import { Mapping } from "@/types/mapping";
 import { format } from "date-fns";
 import { toast } from "@/components/ui/use-toast";
 import CreateMapping from "@/components/CreateMapping";
+import { API_CONFIG, ROUTES, UI_CONFIG } from "@/config/constants";
 
 const MappingsList = () => {
   const [mappings, setMappings] = useState<Mapping[]>([]);
@@ -19,8 +20,6 @@ const MappingsList = () => {
   const [isCreatingMapping, setIsCreatingMapping] = useState(false);
   const navigate = useNavigate();
 
-  const baseUrl = "http://localhost:3031";
-
   useEffect(() => {
     fetchMappings();
   }, []);
@@ -28,12 +27,23 @@ const MappingsList = () => {
   const fetchMappings = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${baseUrl}/mappings`);
+      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.MAPPINGS}`);
       if (!response.ok) {
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
       const data = await response.json();
-      setMappings(data);
+      
+      // Process the data to ensure tags is always an array
+      const processedData = data.map((mapping: any) => ({
+        ...mapping,
+        content: {
+          ...mapping.content,
+          // Ensure tags is always an array, even if it comes as null, undefined, or a non-array value
+          tags: Array.isArray(mapping.content.tags) ? mapping.content.tags : [],
+        }
+      }));
+      
+      setMappings(processedData);
     } catch (error) {
       console.error("Error fetching mappings:", error);
       toast({
@@ -48,17 +58,18 @@ const MappingsList = () => {
   };
 
   const handleMappingClick = (mappingId: number) => {
-    navigate(`/mappings/${mappingId}`);
+    navigate(ROUTES.MAPPING_DETAIL(mappingId));
   };
 
   const filteredMappings = mappings.filter(mapping => 
     mapping.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    mapping.content.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+    (Array.isArray(mapping.content.tags) && 
+     mapping.content.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())))
   );
 
   const formatDate = (dateString: string) => {
     try {
-      return format(new Date(dateString), "MMM d, yyyy");
+      return format(new Date(dateString), UI_CONFIG.DATE_FORMAT);
     } catch (e) {
       return dateString;
     }
@@ -75,6 +86,21 @@ const MappingsList = () => {
       title: "Success",
       description: "New mapping created successfully",
     });
+  };
+
+  // Helper function to safely render tags
+  const renderTags = (mapping: Mapping) => {
+    if (!Array.isArray(mapping.content.tags)) {
+      return null;
+    }
+    
+    return (
+      <div className="flex flex-wrap gap-2 mb-3">
+        {mapping.content.tags.map((tag, index) => (
+          <Badge key={index} variant="secondary">{tag}</Badge>
+        ))}
+      </div>
+    );
   };
 
   return (
@@ -131,11 +157,7 @@ const MappingsList = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {mapping.content.tags.map((tag, index) => (
-                    <Badge key={index} variant="secondary">{tag}</Badge>
-                  ))}
-                </div>
+                {renderTags(mapping)}
                 <Separator className="my-3" />
                 <div className="text-sm text-muted-foreground">
                   <p className="line-clamp-2 font-mono text-xs bg-muted p-2 rounded">
@@ -163,7 +185,7 @@ const MappingsList = () => {
         open={isCreatingMapping} 
         onOpenChange={setIsCreatingMapping} 
         onSuccess={handleCreationSuccess}
-        baseUrl={baseUrl}
+        baseUrl={API_CONFIG.BASE_URL}
       />
     </div>
   );
