@@ -34,13 +34,15 @@ export const SampleDataEditor = ({
             Make changes to your sample data below.
           </SheetDescription>
         </SheetHeader>
-        <div className="mt-6">
-          <Editor
-            value={value}
-            onChange={onChange}
-            language="json"
-            className="h-[60vh]"
-          />
+        <div className="mt-6 flex flex-col h-[70vh]">
+          <div className="flex-1 overflow-hidden">
+            <Editor
+              value={value}
+              onChange={onChange}
+              language="json"
+              height="100%"
+            />
+          </div>
           <div className="mt-4 flex justify-end">
             <Button onClick={onSave} size="sm">
               Save Changes

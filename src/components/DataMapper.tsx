@@ -1,85 +1,138 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
 import Editor from "./Editor";
 import { X } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
 import { Format, SampleDataItem } from "@/types/data-mapper";
 import { convertFormat, transformData } from "@/utils/format-converter";
 import { SampleDataDropdown } from "./data-mapper/SampleDataDropdown";
 import { SampleDataEditor } from "./data-mapper/SampleDataEditor";
+import { toast } from "./ui/use-toast";
 
-const initialSamples: SampleDataItem[] = [
-  {
-    id: "1",
-    name: "Simple User Data",
-    data: JSON.stringify({
-      name: "John Doe",
-      age: 30,
-      email: "john@example.com",
-      address: {
-        street: "123 Main St",
-        city: "New York",
-        country: "USA"
-      }
-    }, null, 2)
-  },
-  {
-    id: "2",
-    name: "Product Catalog",
-    data: JSON.stringify({
-      products: [
-        {
-          id: "p1",
-          name: "Laptop",
-          price: 999.99,
-          specs: {
-            cpu: "Intel i7",
-            ram: "16GB",
-            storage: "512GB SSD"
-          }
-        },
-        {
-          id: "p2",
-          name: "Smartphone",
-          price: 699.99,
-          specs: {
-            screen: "6.5 inch",
-            camera: "48MP",
-            storage: "256GB"
-          }
-        }
-      ]
-    }, null, 2)
-  }
-];
-
-interface DataMapperProps {
-  apiUrl: string; // API URL to fetch data
+interface MappingData {
+  id: number;
+  title: string;
+  content: {
+    tags: string[];
+    yaml: string;
+    test_data: any[];
+  };
+  created_at: string;
+  updated_at: string;
+  href: string;
 }
 
-const fetchMapping = async (url: string) => {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error("Failed to fetch data");
-  return res.json();
-};
+interface DataMapperProps {
+  apiUrl?: string;
+}
 
-
-const DataMapper:  React.FC<DataMapperProps>  = ({apiUrl}) => {
+const DataMapper: React.FC<DataMapperProps> = ({ apiUrl }) => {
   const [mappingRules, setMappingRules] = useState("");
-   const { data, isLoading, error } = useQuery({
-    queryKey: ["mapping", apiUrl],
-    queryFn: () => fetchMapping(apiUrl),
-  });
-  const [sampleDataList, setSampleDataList] = useState<SampleDataItem[]>(initialSamples);
+  const [sampleDataList, setSampleDataList] = useState<SampleDataItem[]>([]);
   const [output, setOutput] = useState("");
   const [format, setFormat] = useState<Format>("yaml");
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editingData, setEditingData] = useState(data);
+  const [editingData, setEditingData] = useState("");
   const [showOutput, setShowOutput] = useState(false);
-  
+  const [loading, setLoading] = useState(false);
+  const [mappingData, setMappingData] = useState<MappingData | null>(null);
+
+  useEffect(() => {
+    if (apiUrl) {
+      fetchMappingData();
+    }
+  }, [apiUrl]);
+
+  const fetchMappingData = async () => {
+    if (!apiUrl) return;
+    
+    setLoading(true);
+    try {
+      const response = await fetch(apiUrl);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch data: ${response.status}`);
+      }
+      
+      const data: MappingData = await response.json();
+      setMappingData(data);
+      
+      // Set the mapping rules from the API data
+      setMappingRules(data.content.yaml);
+      
+      // Convert test_data to our sample data format
+      if (data.content.test_data && Array.isArray(data.content.test_data)) {
+        const samples = data.content.test_data.map((item, index) => ({
+          id: `sample-${index}`,
+          name: `Sample ${index + 1}`,
+          data: typeof item === 'string' ? item : JSON.stringify(item, null, 2)
+        }));
+        
+        setSampleDataList(samples);
+      } else {
+        // Add default samples if none exist
+        setSampleDataList([
+          {
+            id: "1",
+            name: "Simple User Data",
+            data: JSON.stringify({
+              name: "John Doe",
+              age: 30,
+              email: "john@example.com",
+              address: {
+                street: "123 Main St",
+                city: "New York",
+                country: "USA"
+              }
+            }, null, 2)
+          },
+          {
+            id: "2",
+            name: "Product Catalog",
+            data: JSON.stringify({
+              products: [
+                {
+                  id: "p1",
+                  name: "Laptop",
+                  price: 999.99,
+                  specs: {
+                    cpu: "Intel i7",
+                    ram: "16GB",
+                    storage: "512GB SSD"
+                  }
+                },
+                {
+                  id: "p2",
+                  name: "Smartphone",
+                  price: 699.99,
+                  specs: {
+                    screen: "6.5 inch",
+                    camera: "48MP",
+                    storage: "256GB"
+                  }
+                }
+              ]
+            }, null, 2)
+          }
+        ]);
+      }
+      
+      toast({
+        title: "Mapping data loaded",
+        description: `Successfully loaded "${data.title}" mapping configuration.`,
+      });
+    } catch (error) {
+      console.error("Error fetching mapping data:", error);
+      toast({
+        title: "Error loading data",
+        description: "Failed to load mapping configuration. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleFormatChange = (newFormat: Format) => {
     const converted = convertFormat(mappingRules, format, newFormat);
@@ -132,7 +185,9 @@ const DataMapper:  React.FC<DataMapperProps>  = ({apiUrl}) => {
       <header className="border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-14 max-w-screen-2xl items-center">
           <div className="mr-4 hidden md:flex">
-            <h1 className="text-xl font-semibold">Data Mapper</h1>
+            <h1 className="text-xl font-semibold">
+              {mappingData ? mappingData.title : "Data Mapper"}
+            </h1>
           </div>
           <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
             <SampleDataDropdown
@@ -152,25 +207,29 @@ const DataMapper:  React.FC<DataMapperProps>  = ({apiUrl}) => {
         </div>
       </header>
 
-      <div className="container mx-auto p-6 flex-1">
-        <div className="grid gap-6" style={{ 
-          gridTemplateColumns: showOutput ? "1fr 400px" : "1fr",
-          transition: "grid-template-columns 0.3s ease-in-out"
-        }}>
-          <Card className="rounded-md border shadow-md">
+      <div className="container mx-auto p-6 flex-1 flex flex-col">
+        <div 
+          className="grid gap-6 flex-1" 
+          style={{ 
+            gridTemplateColumns: showOutput ? "1fr 400px" : "1fr",
+            transition: "grid-template-columns 0.3s ease-in-out"
+          }}
+        >
+          <Card className="rounded-md border shadow-md flex flex-col">
             <div className="flex items-center justify-between p-2 border-b">
               <div className="text-sm font-medium">Mapping Rules</div>
             </div>
-            <Editor
-              value={mappingRules}
-              onChange={setMappingRules}
-              language={format}
-              className="min-h-[calc(100vh-12rem)]"
-            />
+            <div className="flex-1 w-full">
+              <Editor
+                value={mappingRules}
+                onChange={setMappingRules}
+                language={format}
+              />
+            </div>
           </Card>
 
           {showOutput && (
-            <Card className="rounded-md border shadow-md">
+            <Card className="rounded-md border shadow-md flex flex-col">
               <div className="flex items-center justify-between p-2 border-b">
                 <div className="text-sm font-medium">Output</div>
                 <Button 
@@ -182,13 +241,14 @@ const DataMapper:  React.FC<DataMapperProps>  = ({apiUrl}) => {
                   <X className="h-4 w-4" />
                 </Button>
               </div>
-              <Editor
-                value={output}
-                onChange={setOutput}
-                language={format}
-                className="min-h-[calc(100vh-12rem)]"
-                readOnly
-              />
+              <div className="flex-1 w-full">
+                <Editor
+                  value={output}
+                  onChange={setOutput}
+                  language={format}
+                  readOnly
+                />
+              </div>
             </Card>
           )}
         </div>
