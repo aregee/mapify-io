@@ -145,6 +145,13 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl, baseUrl = 'http://local
     try {
       const converted = convertFormat(mappingRules, format, newFormat);
       setMappingRules(converted);
+      
+      // Also convert the output if it exists
+      if (output) {
+        const convertedOutput = convertFormat(output, format, newFormat);
+        setOutput(convertedOutput);
+      }
+      
       setFormat(newFormat);
     } catch (error) {
       console.error("Format conversion error:", error);
