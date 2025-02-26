@@ -4,13 +4,15 @@ import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
 import Editor from "./Editor";
-import { X, Play, Save } from "lucide-react";
+import { X, Play, Save, History } from "lucide-react";
 import { Format, SampleDataItem, TransformResponse, TransformMode } from "@/types/data-mapper";
 import { convertFormat, transformData } from "@/utils/format-converter";
 import { SampleDataDropdown } from "./data-mapper/SampleDataDropdown";
 import { SampleDataEditor } from "./data-mapper/SampleDataEditor";
 import { toast } from "./ui/use-toast";
 import { parse as yamlParse, stringify as yamlStringify } from 'yaml';
+import { useNavigate } from "react-router-dom";
+import { API_CONFIG, ROUTES } from "@/config/constants";
 
 interface MappingData {
   id: number;
@@ -31,6 +33,7 @@ interface DataMapperProps {
 }
 
 const DataMapper: React.FC<DataMapperProps> = ({ apiUrl, baseUrl = 'http://localhost:3031' }) => {
+  const navigate = useNavigate();
   const [mappingRules, setMappingRules] = useState("");
   const [sampleDataList, setSampleDataList] = useState<SampleDataItem[]>([]);
   const [output, setOutput] = useState("");
@@ -353,6 +356,12 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl, baseUrl = 'http://local
     }
   };
 
+  const viewMappingHistory = () => {
+    if (mappingData?.id) {
+      navigate(ROUTES.MAPPING_HISTORY(mappingData.id));
+    }
+  };
+
   const addSampleData = () => {
     const newItem: SampleDataItem = {
       id: Date.now().toString(),
@@ -422,6 +431,16 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl, baseUrl = 'http://local
                 onClick={toggleTransformMode}
               >
                 Mode: {transformMode === "test" ? "Test" : "Apply"}
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-8"
+                onClick={viewMappingHistory}
+                disabled={!mappingData?.id}
+              >
+                <History className="mr-1 h-4 w-4" />
+                History
               </Button>
               <Button 
                 variant="outline" 
