@@ -515,4 +515,27 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl, baseUrl = 'http://local
                       onChange={setOutput}
                       language={format}
                       readOnly
-                      height="calc(100vh - 12
+                      height="calc(100vh - 12rem)"
+                    />
+                  </div>
+                </Card>
+              </ResizablePanel>
+            </>
+          )}
+        </ResizablePanelGroup>
+      </div>
+
+      <SampleDataEditor
+        isOpen={!!editingId}
+        onOpenChange={(open) => !open && setEditingId(null)}
+        value={editingData}
+        onChange={setEditingData}
+        onSave={saveEditing}
+        isYaml={isEditingYaml}
+        globalFormat={format}
+      />
+    </div>
+  );
+};
+
+export default DataMapper;
