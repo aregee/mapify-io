@@ -13,28 +13,32 @@ import {
 import { SampleDataItem } from "@/types/data-mapper";
 
 interface SampleDataDropdownProps {
-  samples: SampleDataItem[];
-  onEdit: (id: string, data: string, isYaml: boolean) => void;
-  onSelect: (sample: SampleDataItem) => void;
+  sampleDataList: SampleDataItem[];
+  onAddSample: () => void;
+  onEdit: (item: SampleDataItem) => void;
+  onTransform: (data: string, isYaml?: boolean) => void;
+  onDelete: (id: string) => void;
 }
 
 export const SampleDataDropdown = ({
-  samples,
+  sampleDataList,
+  onAddSample,
   onEdit,
-  onSelect,
+  onTransform,
+  onDelete,
 }: SampleDataDropdownProps) => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="sm" className="h-8">
           <Plus className="h-4 w-4 mr-1" />
-          Samples ({samples.length})
+          Samples ({sampleDataList.length})
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-[220px]">
         <DropdownMenuLabel>Sample Data</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {samples.map(item => (
+        {sampleDataList.map(item => (
           <DropdownMenuItem key={item.id} className="flex justify-between">
             <span className="flex-1 truncate mr-1" title={item.name}>
               {item.name} {item.isYaml && <span className="text-xs text-muted-foreground">(YAML)</span>}
@@ -47,7 +51,7 @@ export const SampleDataDropdown = ({
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  onEdit(item.id, item.data, item.isYaml);
+                  onEdit(item);
                 }}
               >
                 <PenLine className="h-3 w-3" />
@@ -59,14 +63,34 @@ export const SampleDataDropdown = ({
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  onSelect(item);
+                  onTransform(item.data, item.isYaml);
                 }}
               >
                 <Play className="h-3 w-3" />
               </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onDelete(item.id);
+                }}
+              >
+                <X className="h-3 w-3" />
+              </Button>
             </div>
           </DropdownMenuItem>
         ))}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={(e) => {
+          e.preventDefault();
+          onAddSample();
+        }}>
+          <Plus className="h-4 w-4 mr-1" />
+          Add New Sample
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
