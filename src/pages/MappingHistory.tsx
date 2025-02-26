@@ -64,16 +64,27 @@ const MappingHistory = () => {
       }
       
       const data = await response.json();
-      setHistoryVersions(data);
       
-      // Set the first version as current if available
-      if (data.length > 0) {
-        setCurrentVersion(data[0]);
+      // Ensure the data is properly formatted and has all required fields
+      const validatedData = data.map((item: any) => ({
+        ...item,
+        content: {
+          tags: item.content?.tags || [],
+          yaml: item.content?.yaml || "",
+          test_data: item.content?.test_data || []
+        }
+      }));
+      
+      setHistoryVersions(validatedData);
+      
+      // Set the most recent version as current if available
+      if (validatedData.length > 0) {
+        setCurrentVersion(validatedData[0]);
       }
       
       toast({
         title: "History loaded",
-        description: `Found ${data.length} versions for this mapping.`,
+        description: `Found ${validatedData.length} versions for this mapping.`,
       });
     } catch (error) {
       console.error("Error fetching mapping history:", error);
@@ -148,6 +159,10 @@ const MappingHistory = () => {
     }
   };
 
+  const getVersionNumber = (index: number) => {
+    return historyVersions.length - index;
+  };
+
   const getSelectedSampleData = () => {
     if (!currentVersion || !currentVersion.content.test_data || !selectedSample) return "";
     
@@ -200,12 +215,12 @@ const MappingHistory = () => {
                       }`}
                       onClick={() => handleVersionSelect(version)}
                     >
-                      <div className="font-medium">Version {historyVersions.length - index}</div>
+                      <div className="font-medium">Version {getVersionNumber(index)}</div>
                       <div className="text-sm opacity-90">
                         {formatVersionDate(version.updated_at)}
                       </div>
                       <div className="text-xs opacity-80">
-                        ID: {version.txnid}
+                        ID: {version.txnid.substring(0, 8)}...
                       </div>
                     </div>
                   ))}
