@@ -531,30 +531,27 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl, baseUrl = 'http://local
         </div>
       </header>
 
-      <div className={`container mx-auto p-6 flex-1 flex flex-col ${isFullScreen ? 'p-2' : 'p-6'}`}>
-        <ResizablePanelGroup direction="horizontal" className="flex-1">
-          <ResizablePanel defaultSize={75} minSize={30}>
-            <Card className={`rounded-md border shadow-md flex flex-col h-full ${isFullScreen ? 'border-0 shadow-none' : ''}`}>
-              <div className="flex items-center justify-between p-2 border-b">
-                <div className="text-sm font-medium">Mapping Rules</div>
-                {transformLoading && <div className="text-xs text-muted-foreground">Processing...</div>}
-              </div>
-              <div className="flex-1 w-full overflow-hidden">
-                <Editor
-                  value={mappingRules}
-                  onChange={setMappingRules}
-                  language={format}
-                  height={isFullScreen ? "calc(100vh - 7rem)" : "calc(100vh - 12rem)"}
-                />
-              </div>
-            </Card>
-          </ResizablePanel>
-          
-          {showOutput && (
-            <>
-              <ResizableHandle withHandle />
-              <ResizablePanel defaultSize={25} minSize={20}>
-                <Card className={`rounded-md border shadow-md flex flex-col h-full ${isFullScreen ? 'border-0 shadow-none' : ''}`}>
+      <div className={`${isFullScreen ? 'w-full p-0' : 'container mx-auto p-6'} flex-1 flex flex-col`}>
+        {isFullScreen ? (
+          <div className="flex-1 flex flex-col">
+            {showOutput ? (
+              <div className="flex-1 grid grid-cols-2 gap-2">
+                <Card className="rounded-none border-0 shadow-none flex flex-col h-full">
+                  <div className="flex items-center justify-between p-2 border-b">
+                    <div className="text-sm font-medium">Mapping Rules</div>
+                    {transformLoading && <div className="text-xs text-muted-foreground">Processing...</div>}
+                  </div>
+                  <div className="flex-1 w-full overflow-hidden">
+                    <Editor
+                      value={mappingRules}
+                      onChange={setMappingRules}
+                      language={format}
+                      height="calc(100vh - 7rem)"
+                    />
+                  </div>
+                </Card>
+                
+                <Card className="rounded-none border-0 shadow-none flex flex-col h-full">
                   <div className="flex items-center justify-between p-2 border-b">
                     <div className="text-sm font-medium">Output</div>
                     <Button 
@@ -572,14 +569,78 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl, baseUrl = 'http://local
                       onChange={setOutput}
                       language={format}
                       readOnly
-                      height={isFullScreen ? "calc(100vh - 7rem)" : "calc(100vh - 12rem)"}
+                      height="calc(100vh - 7rem)"
                     />
                   </div>
                 </Card>
-              </ResizablePanel>
-            </>
-          )}
-        </ResizablePanelGroup>
+              </div>
+            ) : (
+              <Card className="rounded-none border-0 shadow-none flex flex-col h-full">
+                <div className="flex items-center justify-between p-2 border-b">
+                  <div className="text-sm font-medium">Mapping Rules</div>
+                  {transformLoading && <div className="text-xs text-muted-foreground">Processing...</div>}
+                </div>
+                <div className="flex-1 w-full overflow-hidden">
+                  <Editor
+                    value={mappingRules}
+                    onChange={setMappingRules}
+                    language={format}
+                    height="calc(100vh - 7rem)"
+                  />
+                </div>
+              </Card>
+            )}
+          </div>
+        ) : (
+          <ResizablePanelGroup direction="horizontal" className="flex-1">
+            <ResizablePanel defaultSize={75} minSize={30}>
+              <Card className="rounded-md border shadow-md flex flex-col h-full">
+                <div className="flex items-center justify-between p-2 border-b">
+                  <div className="text-sm font-medium">Mapping Rules</div>
+                  {transformLoading && <div className="text-xs text-muted-foreground">Processing...</div>}
+                </div>
+                <div className="flex-1 w-full overflow-hidden">
+                  <Editor
+                    value={mappingRules}
+                    onChange={setMappingRules}
+                    language={format}
+                    height="calc(100vh - 12rem)"
+                  />
+                </div>
+              </Card>
+            </ResizablePanel>
+            
+            {showOutput && (
+              <>
+                <ResizableHandle withHandle />
+                <ResizablePanel defaultSize={25} minSize={20}>
+                  <Card className="rounded-md border shadow-md flex flex-col h-full">
+                    <div className="flex items-center justify-between p-2 border-b">
+                      <div className="text-sm font-medium">Output</div>
+                      <Button 
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 w-7 p-0"
+                        onClick={() => setShowOutput(false)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="flex-1 w-full overflow-hidden">
+                      <Editor
+                        value={output}
+                        onChange={setOutput}
+                        language={format}
+                        readOnly
+                        height="calc(100vh - 12rem)"
+                      />
+                    </div>
+                  </Card>
+                </ResizablePanel>
+              </>
+            )}
+          </ResizablePanelGroup>
+        )}
       </div>
 
       <SampleDataEditor
