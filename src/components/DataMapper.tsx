@@ -13,6 +13,7 @@ import { toast } from "./ui/use-toast";
 import { parse as yamlParse, stringify as yamlStringify } from 'yaml';
 import { useNavigate } from "react-router-dom";
 import { API_CONFIG, ROUTES } from "@/config/constants";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "./ui/resizable";
 
 interface MappingData {
   id: number;
@@ -474,64 +475,44 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl, baseUrl = 'http://local
       </header>
 
       <div className="container mx-auto p-6 flex-1 flex flex-col">
-        <div 
-          className="grid gap-6 flex-1" 
-          style={{ 
-            gridTemplateColumns: showOutput ? "1fr 400px" : "1fr",
-            transition: "grid-template-columns 0.3s ease-in-out"
-          }}
-        >
-          <Card className="rounded-md border shadow-md flex flex-col">
-            <div className="flex items-center justify-between p-2 border-b">
-              <div className="text-sm font-medium">Mapping Rules</div>
-              {transformLoading && <div className="text-xs text-muted-foreground">Processing...</div>}
-            </div>
-            <div className="flex-1 w-full">
-              <Editor
-                value={mappingRules}
-                onChange={setMappingRules}
-                language={format}
-              />
-            </div>
-          </Card>
-
-          {showOutput && (
-            <Card className="rounded-md border shadow-md flex flex-col">
+        <ResizablePanelGroup direction="horizontal" className="flex-1">
+          <ResizablePanel defaultSize={75} minSize={30}>
+            <Card className="rounded-md border shadow-md flex flex-col h-full">
               <div className="flex items-center justify-between p-2 border-b">
-                <div className="text-sm font-medium">Output</div>
-                <Button 
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 w-7 p-0"
-                  onClick={() => setShowOutput(false)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+                <div className="text-sm font-medium">Mapping Rules</div>
+                {transformLoading && <div className="text-xs text-muted-foreground">Processing...</div>}
               </div>
-              <div className="flex-1 w-full">
+              <div className="flex-1 w-full overflow-hidden">
                 <Editor
-                  value={output}
-                  onChange={setOutput}
+                  value={mappingRules}
+                  onChange={setMappingRules}
                   language={format}
-                  readOnly
+                  height="calc(100vh - 12rem)"
                 />
               </div>
             </Card>
-          )}
-        </div>
-      </div>
-
-      <SampleDataEditor
-        isOpen={!!editingId}
-        onOpenChange={(open) => !open && setEditingId(null)}
-        value={editingData}
-        onChange={setEditingData}
-        onSave={saveEditing}
-        isYaml={isEditingYaml}
-        globalFormat={format}
-      />
-    </div>
-  );
-};
-
-export default DataMapper;
+          </ResizablePanel>
+          
+          {showOutput && (
+            <>
+              <ResizableHandle withHandle />
+              <ResizablePanel defaultSize={25} minSize={20}>
+                <Card className="rounded-md border shadow-md flex flex-col h-full">
+                  <div className="flex items-center justify-between p-2 border-b">
+                    <div className="text-sm font-medium">Output</div>
+                    <Button 
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 w-7 p-0"
+                      onClick={() => setShowOutput(false)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="flex-1 w-full overflow-hidden">
+                    <Editor
+                      value={output}
+                      onChange={setOutput}
+                      language={format}
+                      readOnly
+                      height="calc(100vh - 12

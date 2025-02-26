@@ -6,16 +6,23 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "@/components/ui/use-toast";
 import { format } from "date-fns";
-import { ArrowLeft, ArrowRight, RotateCcw } from "lucide-react";
+import { ArrowLeft, RotateCcw, Database } from "lucide-react";
 import { API_CONFIG, ROUTES, UI_CONFIG } from "@/config/constants";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import Editor from "@/components/Editor";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface HistoryVersion {
   title: string;
   content: {
     tags: string[];
     yaml: string;
+    test_data?: Array<{
+      id: string;
+      data: string;
+      dataTitle?: string;
+    }>;
   };
   created_at: string;
   updated_at: string;
@@ -30,12 +37,23 @@ const MappingHistory = () => {
   const [loading, setLoading] = useState(true);
   const [currentVersion, setCurrentVersion] = useState<HistoryVersion | null>(null);
   const [restoringVersion, setRestoringVersion] = useState<string | null>(null);
+  const [selectedTab, setSelectedTab] = useState("mapping");
+  const [selectedSample, setSelectedSample] = useState<string | null>(null);
 
   useEffect(() => {
     if (id) {
       fetchMappingHistory();
     }
   }, [id]);
+
+  useEffect(() => {
+    // Reset selected sample when version changes
+    if (currentVersion && currentVersion.content.test_data && currentVersion.content.test_data.length > 0) {
+      setSelectedSample(currentVersion.content.test_data[0].id);
+    } else {
+      setSelectedSample(null);
+    }
+  }, [currentVersion]);
 
   const fetchMappingHistory = async () => {
     setLoading(true);
@@ -86,7 +104,8 @@ const MappingHistory = () => {
       const restoreData = {
         content: {
           yaml: currentVersion.content.yaml,
-          tags: currentVersion.content.tags || []
+          tags: currentVersion.content.tags || [],
+          test_data: currentVersion.content.test_data || []
         }
       };
 
@@ -127,6 +146,17 @@ const MappingHistory = () => {
     } catch (e) {
       return dateString;
     }
+  };
+
+  const getSelectedSampleData = () => {
+    if (!currentVersion || !currentVersion.content.test_data || !selectedSample) return "";
+    
+    const sample = currentVersion.content.test_data.find(item => item.id === selectedSample);
+    return sample ? sample.data : "";
+  };
+
+  const isYamlSample = (data: string) => {
+    return typeof data === 'string' && data.trim().startsWith('data:');
   };
 
   return (
@@ -231,12 +261,62 @@ const MappingHistory = () => {
                   
                   <Separator className="my-4" />
                   
-                  <div>
-                    <h3 className="text-sm font-medium mb-2">Mapping Rules</h3>
-                    <pre className="bg-muted rounded-md p-4 overflow-auto max-h-[350px] text-xs">
-                      {currentVersion.content.yaml || "No mapping rules"}
-                    </pre>
-                  </div>
+                  <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
+                    <TabsList className="mb-4">
+                      <TabsTrigger value="mapping">Mapping Rules</TabsTrigger>
+                      <TabsTrigger 
+                        value="samples" 
+                        disabled={!currentVersion.content.test_data || currentVersion.content.test_data.length === 0}
+                      >
+                        Sample Data
+                      </TabsTrigger>
+                    </TabsList>
+                    
+                    <TabsContent value="mapping" className="h-[400px]">
+                      <Editor
+                        value={currentVersion.content.yaml || ""}
+                        onChange={() => {}}
+                        language="yaml"
+                        readOnly={true}
+                        height="100%"
+                      />
+                    </TabsContent>
+                    
+                    <TabsContent value="samples">
+                      {currentVersion.content.test_data && currentVersion.content.test_data.length > 0 ? (
+                        <div>
+                          <div className="flex mb-2 gap-2 overflow-x-auto pb-2">
+                            {currentVersion.content.test_data.map((sample) => (
+                              <Button
+                                key={sample.id}
+                                variant={selectedSample === sample.id ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setSelectedSample(sample.id)}
+                                className="flex items-center"
+                              >
+                                <Database className="h-3 w-3 mr-1" />
+                                {sample.dataTitle || `Sample ${sample.id}`}
+                              </Button>
+                            ))}
+                          </div>
+                          
+                          <div className="h-[350px]">
+                            <Editor
+                              value={getSelectedSampleData()}
+                              onChange={() => {}}
+                              language={isYamlSample(getSelectedSampleData()) ? "yaml" : "json"}
+                              readOnly={true}
+                              height="100%"
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center h-[350px] text-muted-foreground">
+                          No sample data available for this version
+                        </div>
+                      )}
+                    </TabsContent>
+                  </Tabs>
                 </div>
               ) : (
                 <div className="flex items-center justify-center h-64 text-muted-foreground">
