@@ -4,7 +4,7 @@ import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
 import Editor from "./Editor";
-import { X, Play, Save, History } from "lucide-react";
+import { X, Play, Save, History, Maximize, Minimize, ArrowLeft } from "lucide-react";
 import { Format, SampleDataItem, TransformResponse, TransformMode } from "@/types/data-mapper";
 import { convertFormat, transformData } from "@/utils/format-converter";
 import { SampleDataDropdown } from "./data-mapper/SampleDataDropdown";
@@ -48,12 +48,27 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl, baseUrl = 'http://local
   const [saveLoading, setSaveLoading] = useState(false);
   const [mappingData, setMappingData] = useState<MappingData | null>(null);
   const [transformMode, setTransformMode] = useState<TransformMode>("test");
+  const [isFullScreen, setIsFullScreen] = useState(false);
 
   useEffect(() => {
     if (apiUrl) {
       fetchMappingData();
     }
   }, [apiUrl]);
+
+  useEffect(() => {
+    // Add ESC key handler to exit fullscreen mode
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isFullScreen) {
+        setIsFullScreen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isFullScreen]);
 
   const fetchMappingData = async () => {
     if (!apiUrl) return;
@@ -363,6 +378,10 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl, baseUrl = 'http://local
     }
   };
 
+  const navigateToMappingsList = () => {
+    navigate(ROUTES.MAPPINGS);
+  };
+
   const addSampleData = () => {
     const newItem: SampleDataItem = {
       id: Date.now().toString(),
@@ -414,11 +433,31 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl, baseUrl = 'http://local
     });
   };
 
+  const toggleFullScreen = () => {
+    setIsFullScreen(!isFullScreen);
+    
+    if (!isFullScreen) {
+      toast({
+        title: "Fullscreen mode enabled",
+        description: "Press ESC key to exit fullscreen mode.",
+      });
+    }
+  };
+
   return (
-    <div className="flex flex-col min-h-screen bg-background animate-fade-in">
-      <header className="border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <div className={`flex flex-col min-h-screen bg-background animate-fade-in ${isFullScreen ? 'fixed inset-0 z-50' : ''}`}>
+      <header className={`${isFullScreen ? 'bg-background/95 backdrop-blur' : 'border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60'}`}>
         <div className="container flex h-14 max-w-screen-2xl items-center">
-          <div className="mr-4 hidden md:flex">
+          <div className="flex items-center mr-4">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="h-8 mr-2"
+              onClick={navigateToMappingsList}
+            >
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Back
+            </Button>
             <h1 className="text-xl font-semibold">
               {mappingData ? mappingData.title : "Data Mapper"}
             </h1>
@@ -453,6 +492,24 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl, baseUrl = 'http://local
                 {saveLoading ? "Saving..." : "Save"}
                 <Save className="ml-1 h-4 w-4" />
               </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-8"
+                onClick={toggleFullScreen}
+              >
+                {isFullScreen ? (
+                  <>
+                    <Minimize className="mr-1 h-4 w-4" />
+                    Exit Fullscreen
+                  </>
+                ) : (
+                  <>
+                    <Maximize className="mr-1 h-4 w-4" />
+                    Fullscreen
+                  </>
+                )}
+              </Button>
             </div>
 
             <div className="flex items-center space-x-2">
@@ -474,10 +531,10 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl, baseUrl = 'http://local
         </div>
       </header>
 
-      <div className="container mx-auto p-6 flex-1 flex flex-col">
+      <div className={`container mx-auto p-6 flex-1 flex flex-col ${isFullScreen ? 'p-2' : 'p-6'}`}>
         <ResizablePanelGroup direction="horizontal" className="flex-1">
           <ResizablePanel defaultSize={75} minSize={30}>
-            <Card className="rounded-md border shadow-md flex flex-col h-full">
+            <Card className={`rounded-md border shadow-md flex flex-col h-full ${isFullScreen ? 'border-0 shadow-none' : ''}`}>
               <div className="flex items-center justify-between p-2 border-b">
                 <div className="text-sm font-medium">Mapping Rules</div>
                 {transformLoading && <div className="text-xs text-muted-foreground">Processing...</div>}
@@ -487,7 +544,7 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl, baseUrl = 'http://local
                   value={mappingRules}
                   onChange={setMappingRules}
                   language={format}
-                  height="calc(100vh - 12rem)"
+                  height={isFullScreen ? "calc(100vh - 7rem)" : "calc(100vh - 12rem)"}
                 />
               </div>
             </Card>
@@ -497,7 +554,7 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl, baseUrl = 'http://local
             <>
               <ResizableHandle withHandle />
               <ResizablePanel defaultSize={25} minSize={20}>
-                <Card className="rounded-md border shadow-md flex flex-col h-full">
+                <Card className={`rounded-md border shadow-md flex flex-col h-full ${isFullScreen ? 'border-0 shadow-none' : ''}`}>
                   <div className="flex items-center justify-between p-2 border-b">
                     <div className="text-sm font-medium">Output</div>
                     <Button 
@@ -515,7 +572,7 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl, baseUrl = 'http://local
                       onChange={setOutput}
                       language={format}
                       readOnly
-                      height="calc(100vh - 12rem)"
+                      height={isFullScreen ? "calc(100vh - 7rem)" : "calc(100vh - 12rem)"}
                     />
                   </div>
                 </Card>
