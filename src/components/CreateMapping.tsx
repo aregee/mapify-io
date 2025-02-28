@@ -13,7 +13,7 @@ import { API_CONFIG } from "@/config/constants";
 interface CreateMappingProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSuccess: () => void;
+  onSuccess: (mappingId?: number) => void;
   baseUrl?: string;
 }
 
@@ -74,14 +74,38 @@ const CreateMapping: React.FC<CreateMappingProps> = ({
         body: JSON.stringify(mappingData),
       });
 
-      if (!response.ok) {
+      // Handle 201 Created as success
+      if (response.status === 201 || response.ok) {
+        let newMappingId: number | undefined;
+        
+        // Try to extract ID from Location header or response body if available
+        const locationHeader = response.headers.get('location');
+        if (locationHeader) {
+          const matches = locationHeader.match(/\/mappings\/(\d+)$/);
+          if (matches && matches[1]) {
+            newMappingId = parseInt(matches[1], 10);
+          }
+        }
+        
+        // If we have a response body, try to get the ID
+        if (response.headers.get('content-length') !== '0') {
+          try {
+            const result = await response.json();
+            if (result && result.id) {
+              newMappingId = result.id;
+            }
+          } catch (e) {
+            // Ignore JSON parsing errors if body is empty
+            console.log("No content in response body");
+          }
+        }
+        
+        onSuccess(newMappingId);
+        resetForm();
+      } else {
         const errorText = await response.text();
         throw new Error(`Failed to create mapping: ${errorText}`);
       }
-
-      const result = await response.json();
-      onSuccess();
-      resetForm();
     } catch (error) {
       console.error("Error creating mapping:", error);
       toast({

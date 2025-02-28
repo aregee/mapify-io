@@ -75,11 +75,16 @@ const MappingHistory = () => {
         }
       }));
       
-      setHistoryVersions(validatedData);
+      // Sort the versions by updated_at in descending order (newest first)
+      const sortedData = [...validatedData].sort((a, b) => {
+        return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+      });
+      
+      setHistoryVersions(sortedData);
       
       // Set the most recent version as current if available
-      if (validatedData.length > 0) {
-        setCurrentVersion(validatedData[0]);
+      if (sortedData.length > 0) {
+        setCurrentVersion(sortedData[0]);
       }
       
       toast({
@@ -128,17 +133,19 @@ const MappingHistory = () => {
         body: JSON.stringify(restoreData),
       });
 
-      if (!response.ok) {
-        throw new Error(`Failed to restore version: ${response.status}`);
+      // Handle 204 No Content as success
+      if (response.status === 204 || response.ok) {
+        toast({
+          title: "Version restored",
+          description: `Successfully restored to version from ${format(new Date(currentVersion.updated_at), UI_CONFIG.DATETIME_FORMAT)}.`,
+        });
+        
+        // Navigate back to the mapping detail view
+        navigate(ROUTES.MAPPING_DETAIL(id as string));
+      } else {
+        const errorText = await response.text();
+        throw new Error(`Failed to restore version: ${errorText}`);
       }
-      
-      toast({
-        title: "Version restored",
-        description: `Successfully restored to version from ${format(new Date(currentVersion.updated_at), UI_CONFIG.DATETIME_FORMAT)}.`,
-      });
-      
-      // Navigate back to the mapping detail view
-      navigate(ROUTES.MAPPING_DETAIL(id as string));
     } catch (error) {
       console.error("Error restoring version:", error);
       toast({
@@ -160,7 +167,7 @@ const MappingHistory = () => {
   };
 
   const getVersionNumber = (index: number) => {
-    return historyVersions.length - index;
+    return index + 1;  // Start from 1 for the newest version
   };
 
   const getSelectedSampleData = () => {

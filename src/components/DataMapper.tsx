@@ -353,18 +353,47 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl, baseUrl = 'http://local
         body: JSON.stringify(data)
       });
 
-      if (!response.ok) {
+      // Handle both 200 OK and 204 No Content as success
+      if (response.status === 204 || response.ok) {
+        // For 204 No Content, we need to maintain the existing data
+        if (response.status === 204) {
+          // Update the local mapping data with our changes since the server didn't return anything
+          setMappingData({
+            ...mappingData,
+            content: {
+              ...mappingData.content,
+              yaml: mappingRules,
+              test_data: testData
+            },
+            updated_at: new Date().toISOString()
+          });
+        } else {
+          // For 200 OK responses, update with the returned data
+          try {
+            const result = await response.json();
+            setMappingData(result);
+          } catch (e) {
+            // If response body is empty but status is 200, handle like 204
+            setMappingData({
+              ...mappingData,
+              content: {
+                ...mappingData.content,
+                yaml: mappingRules,
+                test_data: testData
+              },
+              updated_at: new Date().toISOString()
+            });
+          }
+        }
+
+        toast({
+          title: "Mapping saved",
+          description: "Your changes have been saved successfully.",
+        });
+      } else {
         const errorText = await response.text();
         throw new Error(`API error (${response.status}): ${errorText}`);
       }
-
-      const result = await response.json();
-      setMappingData(result);
-
-      toast({
-        title: "Mapping saved",
-        description: "Your changes have been saved successfully.",
-      });
     } catch (error) {
       console.error("Save error:", error);
       toast({

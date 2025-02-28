@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
@@ -81,13 +80,21 @@ const MappingsList = () => {
     setIsCreatingMapping(true);
   };
 
-  const handleCreationSuccess = () => {
+  const handleCreationSuccess = (newMappingId?: number) => {
     setIsCreatingMapping(false);
-    fetchMappings(); // Refresh the list
+    
     toast({
       title: "Success",
       description: "New mapping created successfully",
     });
+    
+    if (newMappingId) {
+      // Navigate to the new mapping if we have an ID
+      navigate(ROUTES.MAPPING_DETAIL(newMappingId));
+    } else {
+      // Otherwise just refresh the list
+      fetchMappings();
+    }
   };
 
   // Helper function to safely render tags
