@@ -16,8 +16,9 @@ interface SampleDataDropdownProps {
   sampleDataList: SampleDataItem[];
   onAddSample: () => void;
   onEdit: (item: SampleDataItem) => void;
-  onTransform: (data: string, isYaml?: boolean) => void;
+  onTransform: (data: string, isYaml?: boolean, itemName?: string) => void;
   onDelete: (id: string) => void;
+  className?: string;
 }
 
 export const SampleDataDropdown = ({
@@ -26,11 +27,12 @@ export const SampleDataDropdown = ({
   onEdit,
   onTransform,
   onDelete,
+  className = "",
 }: SampleDataDropdownProps) => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="h-8">
+        <Button variant="outline" size="sm" className={`h-8 ${className}`}>
           <Plus className="h-4 w-4 mr-1" />
           Samples ({sampleDataList.length})
         </Button>
@@ -63,7 +65,7 @@ export const SampleDataDropdown = ({
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  onTransform(item.data, item.isYaml);
+                  onTransform(item.data, item.isYaml, item.name);
                 }}
               >
                 <Play className="h-3 w-3" />

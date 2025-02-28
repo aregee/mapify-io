@@ -49,6 +49,7 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl, baseUrl = 'http://local
   const [mappingData, setMappingData] = useState<MappingData | null>(null);
   const [transformMode, setTransformMode] = useState<TransformMode>("test");
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [lastTransformedSample, setLastTransformedSample] = useState<string | null>(null);
 
   useEffect(() => {
     if (apiUrl) {
@@ -194,7 +195,7 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl, baseUrl = 'http://local
     }
   };
 
-  const handleTransform = async (data: string, isYaml: boolean = false) => {
+  const handleTransform = async (data: string, isYaml: boolean = false, sampleName?: string) => {
     setTransformLoading(true);
     try {
       if (transformMode === "apply" && mappingData?.id) {
@@ -202,6 +203,10 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl, baseUrl = 'http://local
       } else {
         await transformWithTestEndpoint(data, isYaml);
       }
+      
+      // Store the name of the sample that was just transformed
+      setLastTransformedSample(sampleName || "Custom Data");
+      
     } catch (error) {
       console.error("Transform error:", error);
       toast({
@@ -513,13 +518,6 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl, baseUrl = 'http://local
             </div>
 
             <div className="flex items-center space-x-2">
-              <SampleDataDropdown
-                sampleDataList={sampleDataList}
-                onAddSample={addSampleData}
-                onEdit={startEditing}
-                onTransform={(data, isYaml) => handleTransform(data, isYaml)}
-                onDelete={deleteSampleData}
-              />
               <Tabs value={format} onValueChange={(value) => handleFormatChange(value as Format)}>
                 <TabsList className="h-8">
                   <TabsTrigger value="yaml" className="text-xs">YAML</TabsTrigger>
@@ -539,7 +537,17 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl, baseUrl = 'http://local
                 <Card className="rounded-none border-0 shadow-none flex flex-col h-full">
                   <div className="flex items-center justify-between p-2 border-b">
                     <div className="text-sm font-medium">Mapping Rules</div>
-                    {transformLoading && <div className="text-xs text-muted-foreground">Processing...</div>}
+                    <div className="flex items-center">
+                      {transformLoading && <div className="text-xs text-muted-foreground mr-2">Processing...</div>}
+                      <SampleDataDropdown
+                        sampleDataList={sampleDataList}
+                        onAddSample={addSampleData}
+                        onEdit={startEditing}
+                        onTransform={(data, isYaml, name) => handleTransform(data, isYaml, name)}
+                        onDelete={deleteSampleData}
+                        className="ml-2"
+                      />
+                    </div>
                   </div>
                   <div className="flex-1 w-full overflow-hidden">
                     <Editor
@@ -553,7 +561,14 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl, baseUrl = 'http://local
                 
                 <Card className="rounded-none border-0 shadow-none flex flex-col h-full">
                   <div className="flex items-center justify-between p-2 border-b">
-                    <div className="text-sm font-medium">Output</div>
+                    <div className="flex items-center">
+                      <span className="text-sm font-medium">Output</span>
+                      {lastTransformedSample && (
+                        <span className="ml-2 text-xs bg-muted px-2 py-0.5 rounded-full">
+                          {lastTransformedSample}
+                        </span>
+                      )}
+                    </div>
                     <Button 
                       size="sm"
                       variant="ghost"
@@ -578,7 +593,17 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl, baseUrl = 'http://local
               <Card className="rounded-none border-0 shadow-none flex flex-col h-full">
                 <div className="flex items-center justify-between p-2 border-b">
                   <div className="text-sm font-medium">Mapping Rules</div>
-                  {transformLoading && <div className="text-xs text-muted-foreground">Processing...</div>}
+                  <div className="flex items-center">
+                    {transformLoading && <div className="text-xs text-muted-foreground mr-2">Processing...</div>}
+                    <SampleDataDropdown
+                      sampleDataList={sampleDataList}
+                      onAddSample={addSampleData}
+                      onEdit={startEditing}
+                      onTransform={(data, isYaml, name) => handleTransform(data, isYaml, name)}
+                      onDelete={deleteSampleData}
+                      className="ml-2"
+                    />
+                  </div>
                 </div>
                 <div className="flex-1 w-full overflow-hidden">
                   <Editor
@@ -597,7 +622,17 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl, baseUrl = 'http://local
               <Card className="rounded-md border shadow-md flex flex-col h-full">
                 <div className="flex items-center justify-between p-2 border-b">
                   <div className="text-sm font-medium">Mapping Rules</div>
-                  {transformLoading && <div className="text-xs text-muted-foreground">Processing...</div>}
+                  <div className="flex items-center">
+                    {transformLoading && <div className="text-xs text-muted-foreground mr-2">Processing...</div>}
+                    <SampleDataDropdown
+                      sampleDataList={sampleDataList}
+                      onAddSample={addSampleData}
+                      onEdit={startEditing}
+                      onTransform={(data, isYaml, name) => handleTransform(data, isYaml, name)}
+                      onDelete={deleteSampleData}
+                      className="ml-2"
+                    />
+                  </div>
                 </div>
                 <div className="flex-1 w-full overflow-hidden">
                   <Editor
@@ -616,7 +651,14 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl, baseUrl = 'http://local
                 <ResizablePanel defaultSize={25} minSize={20}>
                   <Card className="rounded-md border shadow-md flex flex-col h-full">
                     <div className="flex items-center justify-between p-2 border-b">
-                      <div className="text-sm font-medium">Output</div>
+                      <div className="flex items-center">
+                        <span className="text-sm font-medium">Output</span>
+                        {lastTransformedSample && (
+                          <span className="ml-2 text-xs bg-muted px-2 py-0.5 rounded-full">
+                            {lastTransformedSample}
+                          </span>
+                        )}
+                      </div>
                       <Button 
                         size="sm"
                         variant="ghost"
