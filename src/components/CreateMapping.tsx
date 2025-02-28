@@ -78,17 +78,23 @@ const CreateMapping: React.FC<CreateMappingProps> = ({
       if (response.status === 201 || response.ok) {
         let newMappingId: number | undefined;
         
-        // Try to extract ID from Location header or response body if available
+        // Extract ID from Location header
         const locationHeader = response.headers.get('location');
         if (locationHeader) {
-          const matches = locationHeader.match(/\/mappings\/(\d+)$/);
-          if (matches && matches[1]) {
-            newMappingId = parseInt(matches[1], 10);
+          // The location header format is typically "mappings/{id}" or "/mappings/{id}"
+          const matches = locationHeader.match(/\/mappings\/(\d+)$|mappings\/(\d+)$/);
+          if (matches) {
+            // Use the first captured group that isn't undefined
+            const id = matches[1] || matches[2];
+            if (id) {
+              newMappingId = parseInt(id, 10);
+              console.log("Extracted mapping ID from location header:", newMappingId);
+            }
           }
         }
         
-        // If we have a response body, try to get the ID
-        if (response.headers.get('content-length') !== '0') {
+        // If location header parsing failed, try the response body if available
+        if (!newMappingId && response.headers.get('content-length') !== '0') {
           try {
             const result = await response.json();
             if (result && result.id) {
@@ -96,9 +102,14 @@ const CreateMapping: React.FC<CreateMappingProps> = ({
             }
           } catch (e) {
             // Ignore JSON parsing errors if body is empty
-            console.log("No content in response body");
+            console.log("No content in response body or parsing failed");
           }
         }
+        
+        toast({
+          title: "Success",
+          description: "New mapping created successfully",
+        });
         
         onSuccess(newMappingId);
         resetForm();
