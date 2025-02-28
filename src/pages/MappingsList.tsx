@@ -33,13 +33,15 @@ const MappingsList = () => {
       }
       const data = await response.json();
       
-      // Process the data to ensure tags is always an array
+      // Process the data to ensure tags is always an array and yaml is a string
       const processedData = data.map((mapping: any) => ({
         ...mapping,
         content: {
           ...mapping.content,
           // Ensure tags is always an array, even if it comes as null, undefined, or a non-array value
           tags: Array.isArray(mapping.content.tags) ? mapping.content.tags : [],
+          // Ensure yaml is always a string
+          yaml: typeof mapping.content.yaml === 'string' ? mapping.content.yaml : ''
         }
       }));
       
@@ -103,6 +105,21 @@ const MappingsList = () => {
     );
   };
 
+  // Helper function to safely render YAML preview
+  const renderYamlPreview = (mapping: Mapping) => {
+    if (!mapping.content.yaml || typeof mapping.content.yaml !== 'string') {
+      return 'No YAML content available';
+    }
+    
+    try {
+      return mapping.content.yaml.substring(0, 150) + 
+             (mapping.content.yaml.length > 150 ? '...' : '');
+    } catch (error) {
+      console.error("Error rendering YAML preview:", error);
+      return 'Error displaying YAML content';
+    }
+  };
+
   return (
     <div className="container max-w-5xl mx-auto py-8">
       <div className="flex items-center justify-between mb-6">
@@ -161,8 +178,7 @@ const MappingsList = () => {
                 <Separator className="my-3" />
                 <div className="text-sm text-muted-foreground">
                   <p className="line-clamp-2 font-mono text-xs bg-muted p-2 rounded">
-                    {mapping.content.yaml.substring(0, 150)}
-                    {mapping.content.yaml.length > 150 ? '...' : ''}
+                    {renderYamlPreview(mapping)}
                   </p>
                 </div>
               </CardContent>
