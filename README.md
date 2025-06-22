@@ -1,69 +1,111 @@
-# Welcome to your Lovable project
 
-## Project info
+# ETLP Data Mapping Studio
 
-**URL**: https://lovable.dev/projects/5e0f1b94-9e88-425c-926c-a578bdb3dbd1
+A modern, web-based UI for creating and managing data mappings and transformations using the ETLP ecosystem and Jute.clj transformation engine.
 
-## How can I edit this code?
+## Overview
 
-There are several ways of editing your application.
+ETLP Data Mapping Studio is a visual interface that simplifies data transformation workflows by providing a low-code environment for creating, testing, and managing data mappings. Built as part of the ETLP (Efficient Data Processing in Clojure) ecosystem, it leverages Jute.clj for powerful data transformation capabilities while offering an intuitive web interface for business users and developers alike.
 
-**Use Lovable**
+## Key Features
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/5e0f1b94-9e88-425c-926c-a578bdb3dbd1) and start prompting.
+- **Visual Mapping Editor**: Create and edit data transformations using YAML-based mapping rules
+- **Live Preview**: Test mappings with real sample data and see results instantly
+- **Version History**: Track changes to mappings with full versioning support
+- **Sample Data Management**: Manage test datasets for validation and development
+- **Tag-based Organization**: Categorize and organize mappings with custom tags
+- **Real-time Collaboration**: Share and collaborate on mapping configurations
+- **Format Support**: Work with JSON and YAML data formats seamlessly
 
-Changes made via Lovable will be committed automatically to this repo.
+## Architecture
 
-**Use your preferred IDE**
+This application serves as the UI layer for:
+- **ETLP**: Clojure library for parallel data processing using transducers and CSP patterns
+- **Jute.clj**: Data transformation engine for mapping business logic
+- **Backend API**: RESTful service for mapping persistence and transformation execution
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## Quick Start
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Prerequisites
 
-Follow these steps:
+- Node.js (v18 or higher)
+- npm or yarn
+- ETLP backend API running (see [API Integration Guide](docs/api-integration.md))
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
+### Installation
+
+1. Clone the repository:
+```bash
 git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
 cd <YOUR_PROJECT_NAME>
+```
 
-# Step 3: Install the necessary dependencies.
-npm i
+2. Install dependencies:
+```bash
+npm install
+```
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+3. Configure the API endpoint in `src/config/constants.ts`:
+```typescript
+export const API_CONFIG = {
+  BASE_URL: "http://your-etlp-api:3031", // Update with your API URL
+  // ...
+};
+```
+
+4. Start the development server:
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+5. Open your browser to `http://localhost:5173`
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Building for Production
 
-**Use GitHub Codespaces**
+```bash
+npm run build
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+The built files will be in the `dist/` directory.
 
-## What technologies are used for this project?
+## Documentation
 
-This project is built with .
+- [Quick Start Guide](docs/quick-start.md) - Detailed setup instructions
+- [User Guide](docs/user-guide.md) - How to use the mapping interface
+- [API Integration](docs/api-integration.md) - Backend integration details
+- [Architecture](docs/architecture.md) - Technical architecture overview
+- [Development Guide](docs/development.md) - Contributing and development setup
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## ETLP Integration
 
-## How can I deploy this project?
+This UI integrates with the broader ETLP ecosystem:
 
-Simply open [Lovable](https://lovable.dev/projects/5e0f1b94-9e88-425c-926c-a578bdb3dbd1) and click on Share -> Publish.
+- **ETLP Core**: Handles parallel data processing and connector management
+- **etlp-mapper**: Decouples data mapping logic from application code
+- **Jute.clj**: Provides the transformation engine for executing mappings
 
-## I want to use a custom domain - is that possible?
+## Technology Stack
 
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+- **Frontend**: React 18, TypeScript, Tailwind CSS
+- **UI Components**: shadcn/ui
+- **Code Editor**: CodeMirror
+- **Build Tool**: Vite
+- **State Management**: TanStack Query
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is part of the ETLP ecosystem. See the LICENSE file for details.
+
+## Support
+
+- [Documentation](docs/)
+- [Issues](https://github.com/your-org/etlp-data-mapping-studio/issues)
+- [ETLP Community](https://github.com/your-org/etlp)
