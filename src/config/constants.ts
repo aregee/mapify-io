@@ -6,7 +6,7 @@
 // API and server configuration
 export const API_CONFIG = {
   // Base URL for API requests
-  BASE_URL: "http://localhost:3031",
+  BASE_URL: "http://localhost:3000",
   
   // API endpoints
   ENDPOINTS: {
