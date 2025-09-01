@@ -19,15 +19,16 @@ export const API_CONFIG = {
 
 // OIDC/Keycloak configuration
 export const OIDC_CONFIG = {
-  AUTHORITY: import.meta.env.VITE_OIDC_ISSUER || "http://localhost:8080/realms/mapify",
-  CLIENT_ID: import.meta.env.VITE_OIDC_CLIENT_ID || "mapify-studio",
-  REDIRECT_URI: `${window.location.origin}/`,
-  POST_LOGOUT_REDIRECT_URI: `${window.location.origin}/`,
-  RESPONSE_TYPE: "code",
-  SCOPE: "openid profile email",
-  AUTOMATICSILENTRENEW: true,
-  LOADUSERINFO: true,
+  authority: import.meta.env.VITE_OIDC_ISSUER || "http://localhost:8080/realms/mapify",
+  clientId: import.meta.env.VITE_OIDC_CLIENT_ID || "mapify-studio",
+  redirectUri: `${window.location.origin}/`,
+  postLogoutRedirectUri: `${window.location.origin}/`,
+  responseType: "code",
+  scope: "openid profile email",
+  automaticSilentRenew: true,
+  loadUserInfo: true,
 };
+
 
 // Application routes
 export const ROUTES = {
