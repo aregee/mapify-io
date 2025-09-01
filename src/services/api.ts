@@ -13,6 +13,13 @@ export class ApiService {
   }
 
   /**
+   * Get access token - public method
+   */
+  public getToken(): string | undefined {
+    return this.getAccessToken();
+  }
+
+  /**
    * Get headers with authentication token
    */
   private getHeaders(): HeadersInit {

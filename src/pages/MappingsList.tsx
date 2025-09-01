@@ -11,8 +11,10 @@ import { format } from "date-fns";
 import { toast } from "@/components/ui/use-toast";
 import CreateMapping from "@/components/CreateMapping";
 import { API_CONFIG, ROUTES, UI_CONFIG } from "@/config/constants";
+import { useApi } from "@/context/ApiContext";
 
 const MappingsList = () => {
+  const { apiService } = useApi();
   const [mappings, setMappings] = useState<Mapping[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -26,11 +28,7 @@ const MappingsList = () => {
   const fetchMappings = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.MAPPINGS}`);
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-      const data = await response.json();
+      const data = await apiService.get(API_CONFIG.ENDPOINTS.MAPPINGS);
       
       // Process the data to ensure tags is always an array and yaml is a string
       const processedData = data.map((mapping: any) => ({

@@ -14,6 +14,7 @@ import { parse as yamlParse, stringify as yamlStringify } from 'yaml';
 import { useNavigate } from "react-router-dom";
 import { API_CONFIG, ROUTES } from "@/config/constants";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "./ui/resizable";
+import { ApiService } from "@/services/api";
 
 interface MappingData {
   id: number;
@@ -31,9 +32,10 @@ interface MappingData {
 interface DataMapperProps {
   apiUrl?: string;
   baseUrl?: string;
+  apiService?: ApiService;
 }
 
-const DataMapper: React.FC<DataMapperProps> = ({ apiUrl, baseUrl = 'http://localhost:3031' }) => {
+const DataMapper: React.FC<DataMapperProps> = ({ apiUrl, baseUrl = 'http://localhost:3031', apiService }) => {
   const navigate = useNavigate();
   const [mappingRules, setMappingRules] = useState("");
   const [sampleDataList, setSampleDataList] = useState<SampleDataItem[]>([]);
@@ -72,16 +74,13 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl, baseUrl = 'http://local
   }, [isFullScreen]);
 
   const fetchMappingData = async () => {
-    if (!apiUrl) return;
+    if (!apiUrl || !apiService) return;
     
     setLoading(true);
     try {
-      const response = await fetch(apiUrl);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch data: ${response.status}`);
-      }
-      
-      const data: MappingData = await response.json();
+      // Extract the path from the full URL
+      const urlPath = apiUrl.replace(baseUrl, '');
+      const data: MappingData = await apiService.get(urlPath);
       setMappingData(data);
       
       // Set the mapping rules from the API data
@@ -241,20 +240,11 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl, baseUrl = 'http://local
       }
     }
 
-    const response = await fetch(`${baseUrl}/mappings/${mappingData.id}/apply`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ data: parsedData })
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`API error (${response.status}): ${errorText}`);
+    if (!apiService) {
+      throw new Error("API service not available");
     }
 
-    const result = await response.json();
+    const result = await apiService.post(`/mappings/${mappingData.id}/apply`, { data: parsedData });
     
     // Format the output based on current format preference
     if (format === "yaml") {
@@ -289,11 +279,24 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl, baseUrl = 'http://local
       }
     }
 
+    if (!apiService) {
+      throw new Error("API service not available");
+    }
+
+    // For the test endpoint, we need to send YAML content with special headers
+    // Since our API service always sends JSON, we need to use fetch directly for YAML content
+    const token = apiService.getToken();
+    const headers: HeadersInit = {
+      'Content-Type': 'application/x-yaml'
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
     const response = await fetch(`${baseUrl}/mappings/test`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-yaml'
-      },
+      headers,
       body: requestBody
     });
 
@@ -345,55 +348,27 @@ const DataMapper: React.FC<DataMapperProps> = ({ apiUrl, baseUrl = 'http://local
         }
       };
 
-      const response = await fetch(`${baseUrl}/mappings/${mappingData.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
+      if (!apiService) {
+        throw new Error("API service not available");
+      }
+
+      await apiService.put(`/mappings/${mappingData.id}`, data);
+
+      // Update the local mapping data with our changes since PUT succeeded
+      setMappingData({
+        ...mappingData,
+        content: {
+          ...mappingData.content,
+          yaml: mappingRules,
+          test_data: testData
         },
-        body: JSON.stringify(data)
+        updated_at: new Date().toISOString()
       });
 
-      // Handle both 200 OK and 204 No Content as success
-      if (response.status === 204 || response.ok) {
-        // For 204 No Content, we need to maintain the existing data
-        if (response.status === 204) {
-          // Update the local mapping data with our changes since the server didn't return anything
-          setMappingData({
-            ...mappingData,
-            content: {
-              ...mappingData.content,
-              yaml: mappingRules,
-              test_data: testData
-            },
-            updated_at: new Date().toISOString()
-          });
-        } else {
-          // For 200 OK responses, update with the returned data
-          try {
-            const result = await response.json();
-            setMappingData(result);
-          } catch (e) {
-            // If response body is empty but status is 200, handle like 204
-            setMappingData({
-              ...mappingData,
-              content: {
-                ...mappingData.content,
-                yaml: mappingRules,
-                test_data: testData
-              },
-              updated_at: new Date().toISOString()
-            });
-          }
-        }
-
-        toast({
-          title: "Mapping saved",
-          description: "Your changes have been saved successfully.",
-        });
-      } else {
-        const errorText = await response.text();
-        throw new Error(`API error (${response.status}): ${errorText}`);
-      }
+      toast({
+        title: "Mapping saved",
+        description: "Your changes have been saved successfully.",
+      });
     } catch (error) {
       console.error("Save error:", error);
       toast({

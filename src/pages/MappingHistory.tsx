@@ -8,6 +8,7 @@ import { toast } from "@/components/ui/use-toast";
 import { format } from "date-fns";
 import { ArrowLeft, RotateCcw, Database } from "lucide-react";
 import { API_CONFIG, ROUTES, UI_CONFIG } from "@/config/constants";
+import { useApi } from "@/context/ApiContext";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Editor from "@/components/Editor";
@@ -33,6 +34,7 @@ interface HistoryVersion {
 const MappingHistory = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { apiService } = useApi();
   const [historyVersions, setHistoryVersions] = useState<HistoryVersion[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentVersion, setCurrentVersion] = useState<HistoryVersion | null>(null);
@@ -58,12 +60,7 @@ const MappingHistory = () => {
   const fetchMappingHistory = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.MAPPINGS}/${id}/_history`);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch history: ${response.status}`);
-      }
-      
-      const data = await response.json();
+      const data = await apiService.get(`${API_CONFIG.ENDPOINTS.MAPPINGS}/${id}/_history`);
       
       // Ensure the data is properly formatted and has all required fields
       const validatedData = data.map((item: any) => ({
@@ -125,27 +122,15 @@ const MappingHistory = () => {
         }
       };
 
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.MAPPINGS}/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(restoreData),
+      await apiService.put(`${API_CONFIG.ENDPOINTS.MAPPINGS}/${id}`, restoreData);
+      
+      toast({
+        title: "Version restored",
+        description: `Successfully restored to version from ${format(new Date(currentVersion.updated_at), UI_CONFIG.DATETIME_FORMAT)}.`,
       });
-
-      // Handle 204 No Content as success
-      if (response.status === 204 || response.ok) {
-        toast({
-          title: "Version restored",
-          description: `Successfully restored to version from ${format(new Date(currentVersion.updated_at), UI_CONFIG.DATETIME_FORMAT)}.`,
-        });
-        
-        // Navigate back to the mapping detail view
-        navigate(ROUTES.MAPPING_DETAIL(id as string));
-      } else {
-        const errorText = await response.text();
-        throw new Error(`Failed to restore version: ${errorText}`);
-      }
+      
+      // Navigate back to the mapping detail view
+      navigate(ROUTES.MAPPING_DETAIL(id as string));
     } catch (error) {
       console.error("Error restoring version:", error);
       toast({

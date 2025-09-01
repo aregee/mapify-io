@@ -9,6 +9,7 @@ import { X } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { CreateMappingRequest } from "@/types/mapping";
 import { API_CONFIG } from "@/config/constants";
+import { useApi } from "@/context/ApiContext";
 
 interface CreateMappingProps {
   open: boolean;
@@ -23,6 +24,7 @@ const CreateMapping: React.FC<CreateMappingProps> = ({
   onSuccess,
   baseUrl = API_CONFIG.BASE_URL
 }) => {
+  const { apiService } = useApi();
   const [title, setTitle] = useState("");
   const [tagInput, setTagInput] = useState("");
   const [tags, setTags] = useState<string[]>([]);
@@ -66,57 +68,20 @@ const CreateMapping: React.FC<CreateMappingProps> = ({
     };
 
     try {
-      const response = await fetch(`${baseUrl}${API_CONFIG.ENDPOINTS.MAPPINGS}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(mappingData),
-      });
-
-      // Handle 201 Created as success
-      if (response.status === 201 || response.ok) {
-        let newMappingId: number | undefined;
-        
-        // Extract ID from Location header
-        const locationHeader = response.headers.get('location');
-        if (locationHeader) {
-          // The location header format is typically "mappings/{id}" or "/mappings/{id}"
-          const matches = locationHeader.match(/\/mappings\/(\d+)$|mappings\/(\d+)$/);
-          if (matches) {
-            // Use the first captured group that isn't undefined
-            const id = matches[1] || matches[2];
-            if (id) {
-              newMappingId = parseInt(id, 10);
-              console.log("Extracted mapping ID from location header:", newMappingId);
-            }
-          }
-        }
-        
-        // If location header parsing failed, try the response body if available
-        if (!newMappingId && response.headers.get('content-length') !== '0') {
-          try {
-            const result = await response.json();
-            if (result && result.id) {
-              newMappingId = result.id;
-            }
-          } catch (e) {
-            // Ignore JSON parsing errors if body is empty
-            console.log("No content in response body or parsing failed");
-          }
-        }
-        
-        toast({
-          title: "Success",
-          description: "New mapping created successfully",
-        });
-        
-        onSuccess(newMappingId);
-        resetForm();
-      } else {
-        const errorText = await response.text();
-        throw new Error(`Failed to create mapping: ${errorText}`);
+      const result = await apiService.post(API_CONFIG.ENDPOINTS.MAPPINGS, mappingData);
+      
+      let newMappingId: number | undefined;
+      if (result && result.id) {
+        newMappingId = result.id;
       }
+      
+      toast({
+        title: "Success",
+        description: "New mapping created successfully",
+      });
+      
+      onSuccess(newMappingId);
+      resetForm();
     } catch (error) {
       console.error("Error creating mapping:", error);
       toast({
