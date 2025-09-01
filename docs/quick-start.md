@@ -10,6 +10,7 @@ Before you begin, ensure you have the following installed:
 - **Node.js** (v18 or higher) - [Download here](https://nodejs.org/)
 - **npm** (comes with Node.js) or **yarn**
 - **Git** for cloning the repository
+- **Keycloak** (v21 or higher) - [Download here](https://www.keycloak.org/downloads)
 - **ETLP Backend API** - See [Backend Setup](#backend-setup) below
 
 ## Installation
@@ -35,31 +36,57 @@ yarn install
 
 ### 3. Environment Configuration
 
-Create a copy of the environment configuration:
+Create a `.env.local` file in the project root:
 
-```bash
-cp .env.example .env.local  # If .env.example exists
+```env
+# Keycloak OIDC Configuration
+VITE_OIDC_ISSUER=http://localhost:8080/realms/mapify
+VITE_OIDC_CLIENT_ID=mapify-studio
+
+# API Configuration  
+VITE_API_BASE=http://localhost:3031
 ```
 
-Or manually configure the API endpoint in `src/config/constants.ts`:
+### 4. Keycloak Setup
 
-```typescript
-export const API_CONFIG = {
-  BASE_URL: "http://localhost:3031", // Your ETLP API URL
-  ENDPOINTS: {
-    MAPPINGS: "/mappings",
-  },
-  TIMEOUT: 30000,
-};
-```
+1. **Start Keycloak** (if not already running):
+   ```bash
+   # Using Keycloak standalone
+   ./bin/kc.sh start-dev --http-port=8080
+   
+   # Or using Docker
+   docker run -p 8080:8080 -e KEYCLOAK_ADMIN=admin -e KEYCLOAK_ADMIN_PASSWORD=admin quay.io/keycloak/keycloak:latest start-dev
+   ```
 
-### 4. Start Development Server
+2. **Access Keycloak Admin Console**:
+   - Go to `http://localhost:8080/admin`
+   - Login with admin credentials
+
+3. **Create Realm**:
+   - Click "Create Realm"
+   - Name: `mapify`
+   - Click "Create"
+
+4. **Create Client**:
+   - In the `mapify` realm, go to "Clients"
+   - Click "Create client"
+   - Client ID: `mapify-studio`
+   - Client type: `OpenID Connect`
+   - Click "Next" and "Save"
+
+5. **Configure Client**:
+   - In client settings, set:
+     - Valid redirect URIs: `http://localhost:5173/*`
+     - Web origins: `http://localhost:5173`
+     - Access Type: `public`
+
+### 5. Start Development Server
 
 ```bash
 npm run dev
 ```
 
-The application will be available at `http://localhost:5173`
+The application will be available at `http://localhost:5173`. You'll be redirected to Keycloak for authentication on first access.
 
 ## Backend Setup
 

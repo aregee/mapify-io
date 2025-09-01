@@ -19,6 +19,7 @@ Welcome to the comprehensive documentation for ETLP Data Mapping Studio - a visu
 - [API Integration](api-integration.md) - Backend API integration details
 - [Architecture Overview](architecture.md) - Technical architecture and design decisions
 - [Development Guide](development.md) - Contributing and development setup
+- [Authentication Guide](authentication.md) - Keycloak integration and security setup
 
 ### ETLP Ecosystem
 - [ETLP Integration](api-integration.md#etlp-integration) - How this UI fits into the ETLP ecosystem

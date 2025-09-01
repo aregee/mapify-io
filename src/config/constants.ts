@@ -6,7 +6,7 @@
 // API and server configuration
 export const API_CONFIG = {
   // Base URL for API requests
-  BASE_URL: "http://localhost:3031",
+  BASE_URL: import.meta.env.VITE_API_BASE || "http://localhost:3031",
   
   // API endpoints
   ENDPOINTS: {
@@ -15,6 +15,18 @@ export const API_CONFIG = {
   
   // Request timeout in milliseconds
   TIMEOUT: 30000,
+};
+
+// OIDC/Keycloak configuration
+export const OIDC_CONFIG = {
+  AUTHORITY: import.meta.env.VITE_OIDC_ISSUER || "http://localhost:8080/realms/mapify",
+  CLIENT_ID: import.meta.env.VITE_OIDC_CLIENT_ID || "mapify-studio",
+  REDIRECT_URI: `${window.location.origin}/`,
+  POST_LOGOUT_REDIRECT_URI: `${window.location.origin}/`,
+  RESPONSE_TYPE: "code",
+  SCOPE: "openid profile email",
+  AUTOMATICSILENTRENEW: true,
+  LOADUSERINFO: true,
 };
 
 // Application routes
