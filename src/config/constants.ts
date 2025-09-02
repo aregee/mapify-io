@@ -17,7 +17,25 @@ export const API_CONFIG = {
   TIMEOUT: 30000,
 };
 
-// OIDC/Keycloak configuration
+// Environment validation
+const validateEnvironment = () => {
+  const missing = [];
+  
+  if (!import.meta.env.VITE_OIDC_ISSUER && !window.location.hostname.includes('localhost')) {
+    missing.push('VITE_OIDC_ISSUER');
+  }
+  
+  if (missing.length > 0) {
+    console.error('Missing required environment variables:', missing);
+  }
+  
+  return missing;
+};
+
+// Run validation
+validateEnvironment();
+
+// OIDC/Keycloak configuration with enhanced settings
 export const OIDC_CONFIG = {
   authority: import.meta.env.VITE_OIDC_ISSUER || "http://localhost:8080/realms/mapify",
   clientId: import.meta.env.VITE_OIDC_CLIENT_ID || "mapify-studio",
@@ -27,6 +45,32 @@ export const OIDC_CONFIG = {
   scope: "openid profile email",
   automaticSilentRenew: true,
   loadUserInfo: true,
+  // Enhanced Keycloak compatibility settings
+  metadataUrl: `${import.meta.env.VITE_OIDC_ISSUER || "http://localhost:8080/realms/mapify"}/.well-known/openid_configuration`,
+  includeIdTokenInSilentRenew: true,
+  monitorSession: false,
+  checkSessionInterval: 2000,
+  silentRequestTimeout: 10000,
+  // Debug logging for development
+  ...(import.meta.env.DEV && {
+    extraQueryParams: {},
+    extraHeaders: {},
+  }),
+};
+
+// Debug utilities
+export const OIDC_DEBUG = {
+  isEnabled: import.meta.env.DEV,
+  log: (message: string, data?: any) => {
+    if (import.meta.env.DEV) {
+      console.log(`[OIDC Debug] ${message}`, data || '');
+    }
+  },
+  error: (message: string, error?: any) => {
+    if (import.meta.env.DEV) {
+      console.error(`[OIDC Error] ${message}`, error || '');
+    }
+  },
 };
 
 
