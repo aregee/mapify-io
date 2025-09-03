@@ -6,7 +6,7 @@
 // API and server configuration
 export const API_CONFIG = {
   // Base URL for API requests
-  BASE_URL: import.meta.env.VITE_API_BASE || "http://localhost:3031",
+  BASE_URL: import.meta.env.VITE_API_BASE || "http://localhost:3000",
   
   // API endpoints
   ENDPOINTS: {
@@ -38,19 +38,19 @@ validateEnvironment();
 // OIDC/Keycloak configuration with enhanced settings
 export const OIDC_CONFIG = {
   authority: import.meta.env.VITE_OIDC_ISSUER || "http://localhost:8080/realms/mapify",
-  clientId: import.meta.env.VITE_OIDC_CLIENT_ID || "mapify-studio",
-  redirectUri: `${window.location.origin}/`,
-  postLogoutRedirectUri: `${window.location.origin}/`,
-  responseType: "code",
-  scope: "openid profile email",
-  automaticSilentRenew: true,
-  loadUserInfo: true,
+  client_id: import.meta.env.VITE_OIDC_CLIENT_ID || "mapify-studio",
+  redirect_uri: `${window.location.origin}/`,
+  post_logout_redirect_uri: `${window.location.origin}/`,
+  response_type: "code",
+  scopes: ["openid", "profile", "email"],
+  automatic_silent_renew: true,
+  load_user_nfo: true,
   // Enhanced Keycloak compatibility settings
-  metadataUrl: `${import.meta.env.VITE_OIDC_ISSUER || "http://localhost:8080/realms/mapify"}/.well-known/openid_configuration`,
-  includeIdTokenInSilentRenew: true,
-  monitorSession: false,
-  checkSessionInterval: 2000,
-  silentRequestTimeout: 10000,
+  metadata_url: `${import.meta.env.VITE_OIDC_ISSUER || "http://localhost:8080/realms/mapify"}/.well-known/openid-configuration`,
+  includeId_token_in_silent_renew: true,
+  monitor_session: false,
+  check_session_interval: 2000,
+  silent_request_timeout: 10000,
   // Debug logging for development
   ...(import.meta.env.DEV && {
     extraQueryParams: {},

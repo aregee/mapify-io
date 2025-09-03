@@ -38,7 +38,7 @@ export class ApiService {
   /**
    * Generic fetch wrapper with authentication
    */
-  private async fetch(url: string, options: RequestInit = {}): Promise<Response> {
+  async _fetch(url: string, options: RequestInit = {}): Promise<Response> {
     const response = await fetch(`${this.baseUrl}${url}`, {
       ...options,
       headers: {
@@ -55,6 +55,8 @@ export class ApiService {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
+    console.log(response.headers);
+
     return response;
   }
 
@@ -62,7 +64,7 @@ export class ApiService {
    * GET request
    */
   async get(url: string): Promise<any> {
-    const response = await this.fetch(url);
+    const response = await this._fetch(url);
     return response.json();
   }
 
@@ -70,7 +72,7 @@ export class ApiService {
    * POST request
    */
   async post(url: string, data: any): Promise<any> {
-    const response = await this.fetch(url, {
+    const response = await this._fetch(url, {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -81,7 +83,7 @@ export class ApiService {
    * PUT request
    */
   async put(url: string, data: any): Promise<any> {
-    const response = await this.fetch(url, {
+    const response = await this._fetch(url, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -92,7 +94,7 @@ export class ApiService {
    * DELETE request
    */
   async delete(url: string): Promise<void> {
-    await this.fetch(url, {
+    await this._fetch(url, {
       method: 'DELETE',
     });
   }

@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -18,8 +17,8 @@ interface CreateMappingProps {
   baseUrl?: string;
 }
 
-const CreateMapping: React.FC<CreateMappingProps> = ({ 
-  open, 
+const CreateMapping: React.FC<CreateMappingProps> = ({
+  open,
   onOpenChange,
   onSuccess,
   baseUrl = API_CONFIG.BASE_URL
@@ -46,7 +45,7 @@ const CreateMapping: React.FC<CreateMappingProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!title.trim()) {
       toast({
         title: "Validation Error",
@@ -57,7 +56,7 @@ const CreateMapping: React.FC<CreateMappingProps> = ({
     }
 
     setIsSubmitting(true);
-    
+
     const mappingData: CreateMappingRequest = {
       title: title.trim(),
       content: {
@@ -68,20 +67,52 @@ const CreateMapping: React.FC<CreateMappingProps> = ({
     };
 
     try {
-      const result = await apiService.post(API_CONFIG.ENDPOINTS.MAPPINGS, mappingData);
-      
-      let newMappingId: number | undefined;
-      if (result && result.id) {
-        newMappingId = result.id;
+      const response = await apiService._fetch(API_CONFIG.ENDPOINTS.MAPPINGS, {method: 'POST', body: JSON.stringify(mappingData)});
+
+      console.log(response);
+      // Handle 201 Created as success
+      if (response.status === 201 || response.ok) {
+        let newMappingId: number | undefined;
+        console.log("invokedd>>>", response.headers)
+        // Extract ID from Location header
+        const locationHeader = response.headers.get('Location');
+        if (locationHeader) {
+          // The location header format is typically "mappings/{id}" or "/mappings/{id}"
+          const matches = locationHeader.match(/\/mappings\/(\d+)$|mappings\/(\d+)$/);
+          if (matches) {
+            // Use the first captured group that isn't undefined
+            const id = matches[1] || matches[2];
+            if (id) {
+              newMappingId = parseInt(id, 10);
+              console.log("Extracted mapping ID from location header:", newMappingId);
+            }
+          }
+        }
+
+        // If location header parsing failed, try the response body if available
+        if (!newMappingId && response.headers.get('content-length') !== '0') {
+          try {
+            const result = await response.json();
+            if (result && result.id) {
+              newMappingId = result.id;
+            }
+          } catch (e) {
+            // Ignore JSON parsing errors if body is empty
+            console.log("No content in response body or parsing failed");
+          }
+        }
+
+        toast({
+          title: "Success",
+          description: "New mapping created successfully",
+        });
+
+        onSuccess(newMappingId);
+        resetForm();
+      } else {
+        const errorText = await response.text();
+        throw new Error(`Failed to create mapping: ${errorText}`);
       }
-      
-      toast({
-        title: "Success",
-        description: "New mapping created successfully",
-      });
-      
-      onSuccess(newMappingId);
-      resetForm();
     } catch (error) {
       console.error("Error creating mapping:", error);
       toast({
@@ -150,9 +181,9 @@ const CreateMapping: React.FC<CreateMappingProps> = ({
             </div>
           </div>
           <DialogFooter>
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              type="button"
+              variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={isSubmitting}
             >
