@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ArrowRight, Plus, Search } from "lucide-react";
+import { ArrowRight, Plus, Search, Trash2 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Mapping } from "@/types/mapping";
 import { format } from "date-fns";
 import { toast } from "@/components/ui/use-toast";
@@ -95,6 +96,27 @@ const MappingsList = () => {
     }
   };
 
+  const handleDeleteMapping = async (mappingId: number, title: string) => {
+    try {
+      await apiService.delete(`/mappings/${mappingId}`);
+      
+      toast({
+        title: "Success",
+        description: `Mapping "${title}" deleted successfully`,
+      });
+      
+      // Refresh the list
+      fetchMappings();
+    } catch (error) {
+      console.error("Error deleting mapping:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete mapping. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Helper function to safely render tags
   const renderTags = (mapping: Mapping) => {
     if (!Array.isArray(mapping.content.tags)) {
@@ -164,13 +186,43 @@ const MappingsList = () => {
               <CardHeader className="pb-3">
                 <div className="flex justify-between items-start">
                   <CardTitle className="text-xl">{mapping.title}</CardTitle>
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    onClick={() => handleMappingClick(mapping.id)}
-                  >
-                    <ArrowRight className="h-5 w-5" />
-                  </Button>
+                  <div className="flex gap-2">
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Mapping</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to delete "{mapping.title}"? This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction 
+                            onClick={() => handleDeleteMapping(mapping.id, mapping.title)}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => handleMappingClick(mapping.id)}
+                    >
+                      <ArrowRight className="h-5 w-5" />
+                    </Button>
+                  </div>
                 </div>
                 <CardDescription>
                   Created {formatDate(mapping.created_at)}

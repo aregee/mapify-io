@@ -60,8 +60,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     OIDC_DEBUG.log("AuthProvider initialized", {
       authority: OIDC_CONFIG.authority,
-      clientId: OIDC_CONFIG.clientId,
-      redirectUri: OIDC_CONFIG.redirectUri,
+      clientId: OIDC_CONFIG.client_id,
+      redirectUri: OIDC_CONFIG.redirect_uri,
     });
   }, []);
 
